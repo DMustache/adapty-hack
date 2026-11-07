@@ -89,6 +89,11 @@ def main():
     assert plan["modeled_discount_uplift"] is False
     persisted = request("GET", ANA + "/v1/experiments/" + plan["experiment_id"])
     assert persisted["experiment_id"] == plan["experiment_id"]
+    assert persisted["request_fingerprint"] == plan["request_fingerprint"]
+    assert persisted["assignments"] == plan["assignments"]
+    assert persisted["max_allocated_discount_exposure_usd"] == plan["max_allocated_discount_exposure_usd"]
+    assert persisted["plan_source"] == "scenario_experiment"
+    assert persisted["modeled_discount_uplift"] is False
     assert len(request("GET", ANA + "/v1/metrics/churn-risk?app_id=lumen-demo")["points"]) >= 12
 
     for i in range(40):
