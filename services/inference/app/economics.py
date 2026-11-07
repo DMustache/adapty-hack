@@ -111,7 +111,7 @@ def make_plan(req: RetentionPlanRequest) -> RetentionPlanResult:
         created_at=datetime.now(UTC), budget_usd=req.budget_usd,
         max_allocated_discount_exposure_usd=allocated_cents / 100,
         expected_baseline_revenue_at_risk_usd=sum(cents(c.renewal_price_usd * c.churn_probability) for c in users) / 100,
-        unallocated_budget_usd=remaining_cents / 100,
+        unallocated_budget_usd=float(Decimal(str(req.budget_usd)) - Decimal(allocated_cents) / 100),
         assignments=result,
         disclaimer=(
             "Experiment allocation only. There are no observed discount treatment outcomes. "
