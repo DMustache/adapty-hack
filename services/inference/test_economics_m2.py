@@ -45,7 +45,12 @@ def test_fractional_cent_budget_cannot_be_rounded_up():
     plan = make_plan(request(budget=0.005, price=0.10))
     assert plan.assignments[0].arm == "no_offer"
     assert plan.max_allocated_discount_exposure_usd <= plan.budget_usd
-    assert plan.unallocated_budget_usd == 0
+    assert plan.unallocated_budget_usd == 0.005
+
+    plan = make_plan(request(budget=0.019, price=0.10))
+    assert plan.assignments[0].arm == "discount_10pct"
+    assert plan.max_allocated_discount_exposure_usd == 0.01
+    assert plan.unallocated_budget_usd == 0.009
 
 
 def test_infeasible_candidate_is_assigned_once_without_discount():
