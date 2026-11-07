@@ -2,7 +2,7 @@
 
 - **M0 Foundation** — DONE. Docker QA gate passed on `develop` SHA `e90f6eac05174988b7b4092572920d73376d0df3` (23 tests, Compose, HTTP mock demo and Grafana); promoted to `main`.
 - **M1 Churn model adapter** — DONE. Docker QA gate passed on `develop` SHA `592b5061c87f4ce0561c5990f919cbadbd2cca36` (30 tests, Compose, HTTP mock demo and Grafana); promoted to `main`. Live HTTP readback confirmed model version/source provenance.
-- **M2 Discount economics & experiment planning** — IN PROGRESS. Contracts frozen; backend and QA jobs ready for parallel worktrees.
+- **M2 Discount economics & experiment planning** — DONE. Docker QA gate passed on `develop` SHA `40dd474fe879ed4959b4b6f8357cff44bae083be` (41 tests, Compose, HTTP mock demo and Grafana); promoted to `main`. Conservative cent-level allocation and fractional unallocated budget passed independent QA.
 - **M3 Analytics + Grafana** — READY after contract freeze.
 - **M4 End-to-end & external handoff** — BLOCKED on M1-M3 integration; no real ML required for mock demo.
 
