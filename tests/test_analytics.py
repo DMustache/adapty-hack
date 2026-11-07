@@ -75,6 +75,7 @@ def test_prediction_model_provenance_survives_ingest_and_read(monkeypatch):
         rowcount = 0
         values = None
         selected_columns = None
+        pending_insert_result = False
 
         def __enter__(self):
             return self
@@ -87,10 +88,12 @@ def test_prediction_model_provenance_survives_ingest_and_read(monkeypatch):
 
         def execute(self, sql, params):
             if "INSERT INTO churn_predictions" in sql:
+                assert "RETURNING prediction_id" in sql
                 columns = sql.split("churn_predictions", 1)[1].split("VALUES", 1)[0]
                 names = [name.strip() for name in columns.strip(" ()\n").split(",")]
                 self.values = dict(zip(names, params))
                 self.rowcount = 1
+                self.pending_insert_result = True
             else:
                 assert params == (payload["prediction_id"],)
                 assert "model_version" in sql and "prediction_source" in sql
@@ -99,6 +102,9 @@ def test_prediction_model_provenance_survives_ingest_and_read(monkeypatch):
 
         def fetchone(self):
             assert self.values is not None
+            if self.pending_insert_result:
+                self.pending_insert_result = False
+                return (self.values["prediction_id"],)
             return tuple(self.values[name] for name in self.selected_columns)
 
     fake_db = FakeDB()
