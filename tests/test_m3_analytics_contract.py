@@ -41,7 +41,7 @@ def experiment(suffix):
         "budget_usd": 10.0, "max_allocated_discount_exposure_usd": 1.0,
         "expected_baseline_revenue_at_risk_usd": 4.0, "unallocated_budget_usd": 9.0,
         "assignments": [{
-            "user_id": f"m3-user-{suffix}", "plan_type": "monthly", "arm": "offer_10",
+            "user_id": f"m3-user-{suffix}", "plan_type": "monthly", "arm": "discount_10pct",
             "discount_fraction": 0.1, "max_discount_exposure_usd": 1.0,
             "renewal_price_usd": 10.0, "expected_revenue_at_risk_usd": 4.0,
             "baseline_renewal_probability": 0.6,
