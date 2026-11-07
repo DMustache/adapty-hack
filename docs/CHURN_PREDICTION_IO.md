@@ -72,8 +72,9 @@ version may be evaluated separately but must not replace the active version.
    it is not evidence that an offer was delivered.
 3. For a regular Adapty placement A/B test, publish a **frozen risk cohort**
    to an agreed profile custom attribute, such as `churn_cohort`, using an
-   explicit mapping from our pseudonymous `user_id` to Adapty's identified
-   customer user ID. Pin the cohort's model and policy versions for the test.
+   explicit mapping from our pseudonymous `user_id` to a verified Adapty
+   profile ID or identified customer user ID. Pin the cohort's model and
+   policy versions for the test.
    Adapty profile updates use its documented server API with `ADAPTY_SECRET`
    kept server-side; require a dry run, idempotency, retries and audit logs.
    Allow for profile and segment propagation delay. An unset attribute must
