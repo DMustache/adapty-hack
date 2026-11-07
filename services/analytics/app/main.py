@@ -99,11 +99,15 @@ def get_prediction(prediction_id: str):
 @app.get("/v1/metrics/churn-risk")
 def churn_risk(app_id: str | None = None):
     with db_connect() as conn, conn.cursor() as cur:
-        cur.execute("""
+        query = """
           SELECT prediction_id, app_id, user_id, predicted_at, churn_probability
-          FROM churn_predictions WHERE (%s IS NULL OR app_id=%s)
-          ORDER BY predicted_at ASC, user_id ASC
-        """, (app_id, app_id))
+          FROM churn_predictions
+        """
+        ordering = " ORDER BY predicted_at ASC, user_id ASC"
+        if app_id is None:
+            cur.execute(query + ordering)
+        else:
+            cur.execute(query + " WHERE app_id=%s" + ordering, (app_id,))
         rows = cur.fetchall()
     return {"points": [
         {"prediction_id": pid, "app_id": app, "user_id": uid,

@@ -43,7 +43,7 @@ def main():
             assert request("GET", INF + "/health")["status"] == "ok"
             assert request("GET", ANA + "/health")["status"] == "ok"
             break
-        except (urllib.error.URLError, AssertionError):
+        except (urllib.error.URLError, ConnectionResetError, AssertionError):
             if i == 39:
                 raise
             time.sleep(1)
@@ -84,7 +84,7 @@ def main():
         try:
             assert request("GET", GRAFANA + "/api/health")["database"] == "ok"
             break
-        except (urllib.error.URLError, AssertionError, KeyError):
+        except (urllib.error.URLError, ConnectionResetError, AssertionError, KeyError):
             if i == 39:
                 raise
             time.sleep(1)
