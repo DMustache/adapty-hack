@@ -80,7 +80,7 @@ bash scripts/promote-milestone.sh M1  # only if tested SHA still matches
 
 Failed gate? Lead writes `.workflow/jobs/FIX-*.md` on `main`, syncs plan to develop, spawns specific fix worktree, merges it, reruns gate. No workers commit directly to `develop` or `main`.
 
-See `START_HERE.md`, `.workflow/README.md`, `docs/ARCHITECTURE.md`, `docs/MODEL_HANDOFF.md`, and `LEAD_START_PROMPT.md`.
+See `.workflow/README.md`, `docs/ARCHITECTURE.md`, and `docs/MODEL_HANDOFF.md`.
 
 ### Project state
 
