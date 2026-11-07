@@ -1,0 +1,593 @@
+{
+  "components": {
+    "schemas": {
+      "ChurnPredictionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "app_id": {
+            "minLength": 1,
+            "title": "App Id",
+            "type": "string"
+          },
+          "context": {
+            "additionalProperties": true,
+            "title": "Context",
+            "type": "object"
+          },
+          "features": {
+            "additionalProperties": true,
+            "title": "Features",
+            "type": "object"
+          },
+          "model_id": {
+            "minLength": 1,
+            "title": "Model Id",
+            "type": "string"
+          },
+          "renewal_horizon_days": {
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Renewal Horizon Days",
+            "type": "integer"
+          },
+          "request_id": {
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "user_id": {
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "app_id",
+          "user_id",
+          "model_id",
+          "renewal_horizon_days"
+        ],
+        "title": "ChurnPredictionRequest",
+        "type": "object"
+      },
+      "ChurnPredictionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "app_id": {
+            "title": "App Id",
+            "type": "string"
+          },
+          "churn_probability": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Churn Probability",
+            "type": "number"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "predicted_at": {
+            "format": "date-time",
+            "title": "Predicted At",
+            "type": "string"
+          },
+          "prediction_id": {
+            "title": "Prediction Id",
+            "type": "string"
+          },
+          "prediction_source": {
+            "enum": [
+              "mock",
+              "external"
+            ],
+            "title": "Prediction Source",
+            "type": "string"
+          },
+          "renewal_horizon_days": {
+            "title": "Renewal Horizon Days",
+            "type": "integer"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prediction_id",
+          "request_id",
+          "app_id",
+          "user_id",
+          "model_id",
+          "model_version",
+          "prediction_source",
+          "predicted_at",
+          "renewal_horizon_days",
+          "churn_probability"
+        ],
+        "title": "ChurnPredictionResult",
+        "type": "object"
+      },
+      "ExperimentAssignment": {
+        "properties": {
+          "arm": {
+            "title": "Arm",
+            "type": "string"
+          },
+          "baseline_renewal_probability": {
+            "title": "Baseline Renewal Probability",
+            "type": "number"
+          },
+          "discount_fraction": {
+            "title": "Discount Fraction",
+            "type": "number"
+          },
+          "expected_revenue_at_risk_usd": {
+            "title": "Expected Revenue At Risk Usd",
+            "type": "number"
+          },
+          "max_discount_exposure_usd": {
+            "title": "Max Discount Exposure Usd",
+            "type": "number"
+          },
+          "min_post_offer_renewal_probability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Post Offer Renewal Probability"
+          },
+          "plan_type": {
+            "enum": [
+              "weekly",
+              "monthly"
+            ],
+            "title": "Plan Type",
+            "type": "string"
+          },
+          "renewal_price_usd": {
+            "title": "Renewal Price Usd",
+            "type": "number"
+          },
+          "required_absolute_uplift": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Absolute Uplift"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "plan_type",
+          "arm",
+          "discount_fraction",
+          "max_discount_exposure_usd",
+          "renewal_price_usd",
+          "expected_revenue_at_risk_usd",
+          "baseline_renewal_probability"
+        ],
+        "title": "ExperimentAssignment",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "RetentionCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "churn_probability": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Churn Probability",
+            "type": "number"
+          },
+          "plan_type": {
+            "enum": [
+              "weekly",
+              "monthly"
+            ],
+            "title": "Plan Type",
+            "type": "string"
+          },
+          "renewal_price_usd": {
+            "exclusiveMinimum": 0.0,
+            "title": "Renewal Price Usd",
+            "type": "number"
+          },
+          "user_id": {
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "churn_probability",
+          "renewal_price_usd",
+          "plan_type"
+        ],
+        "title": "RetentionCandidate",
+        "type": "object"
+      },
+      "RetentionPlanRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "app_id": {
+            "minLength": 1,
+            "title": "App Id",
+            "type": "string"
+          },
+          "budget_usd": {
+            "minimum": 0.0,
+            "title": "Budget Usd",
+            "type": "number"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/RetentionCandidate"
+            },
+            "minItems": 1,
+            "title": "Candidates",
+            "type": "array"
+          },
+          "control_share": {
+            "default": 0.2,
+            "exclusiveMaximum": 1.0,
+            "minimum": 0.0,
+            "title": "Control Share",
+            "type": "number"
+          },
+          "discounts": {
+            "items": {
+              "type": "number"
+            },
+            "minItems": 1,
+            "title": "Discounts",
+            "type": "array"
+          },
+          "experiment_id": {
+            "minLength": 1,
+            "title": "Experiment Id",
+            "type": "string"
+          },
+          "random_seed": {
+            "default": 42,
+            "title": "Random Seed",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "app_id",
+          "experiment_id",
+          "budget_usd",
+          "candidates"
+        ],
+        "title": "RetentionPlanRequest",
+        "type": "object"
+      },
+      "RetentionPlanResult": {
+        "properties": {
+          "app_id": {
+            "title": "App Id",
+            "type": "string"
+          },
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/ExperimentAssignment"
+            },
+            "title": "Assignments",
+            "type": "array"
+          },
+          "budget_usd": {
+            "title": "Budget Usd",
+            "type": "number"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "disclaimer": {
+            "title": "Disclaimer",
+            "type": "string"
+          },
+          "expected_baseline_revenue_at_risk_usd": {
+            "title": "Expected Baseline Revenue At Risk Usd",
+            "type": "number"
+          },
+          "experiment_id": {
+            "title": "Experiment Id",
+            "type": "string"
+          },
+          "max_allocated_discount_exposure_usd": {
+            "title": "Max Allocated Discount Exposure Usd",
+            "type": "number"
+          },
+          "modeled_discount_uplift": {
+            "default": false,
+            "title": "Modeled Discount Uplift",
+            "type": "boolean"
+          },
+          "plan_source": {
+            "const": "scenario_experiment",
+            "default": "scenario_experiment",
+            "title": "Plan Source",
+            "type": "string"
+          },
+          "request_fingerprint": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Request Fingerprint",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "unallocated_budget_usd": {
+            "title": "Unallocated Budget Usd",
+            "type": "number"
+          }
+        },
+        "required": [
+          "experiment_id",
+          "app_id",
+          "request_fingerprint",
+          "created_at",
+          "budget_usd",
+          "max_allocated_discount_exposure_usd",
+          "expected_baseline_revenue_at_risk_usd",
+          "unallocated_budget_usd",
+          "assignments",
+          "disclaimer"
+        ],
+        "title": "RetentionPlanResult",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Smart Retention Offers — Inference & Planning",
+    "version": "0.2.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "operationId": "list_models_v1_models_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Models"
+      }
+    },
+    "/v1/models/{model_id}/schema": {
+      "get": {
+        "operationId": "model_schema_v1_models__model_id__schema_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "title": "Model Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Model Schema"
+      }
+    },
+    "/v1/predict": {
+      "post": {
+        "operationId": "predict_v1_predict_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChurnPredictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChurnPredictionResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Predict"
+      }
+    },
+    "/v1/retention/plan": {
+      "post": {
+        "operationId": "retention_plan_v1_retention_plan_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetentionPlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionPlanResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retention Plan"
+      }
+    }
+  }
+}

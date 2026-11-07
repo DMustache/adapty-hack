@@ -51,6 +51,8 @@ mise run down
 - Analytics OpenAPI: `http://localhost:8002/docs`
 - Grafana: `http://localhost:3000/d/smart-retention`
 
+See the [API demo guide](docs/API_DEMO.md) for request and response examples, checked-in OpenAPI snapshots, and how these custom methods relate to Adapty.
+
 Demo uses mock fixture risks for 12 users. All outputs are clearly labeled. PostgreSQL initialization scripts run on **new volumes only**; if replacing the old Demand Score local demo with the same database volume, explicitly remove the **demo-only** old volume (`docker compose down -v` — destructive) before starting.
 
 ### Offline hackathon dataset
