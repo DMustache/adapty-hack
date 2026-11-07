@@ -1,5 +1,6 @@
 """External churn model adapter + *non-ML* retention experiment economics."""
 import logging
+import math
 import os
 import uuid
 from datetime import datetime, timezone
@@ -60,6 +61,11 @@ async def predict(request: ChurnPredictionRequest):
         validate(instance=request.features, schema=adapter.get_input_schema())
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=f"Invalid model features: {exc.message}") from exc
+    probability = adapter.predict(request.user_id, request.features, request.context)
+    if (isinstance(probability, bool) or not isinstance(probability, (int, float))
+            or not math.isfinite(probability) or not 0 <= probability <= 1):
+        logger.error("Adapter %s returned an invalid churn probability", adapter.model_id)
+        raise HTTPException(status_code=502, detail="Invalid model prediction")
     prediction_id = str(uuid.uuid5(uuid.NAMESPACE_URL,
         f"{request.app_id}/{request.model_id}/{request.request_id}/{request.user_id}"))
     result = ChurnPredictionResult(
@@ -68,7 +74,7 @@ async def predict(request: ChurnPredictionRequest):
         model_id=adapter.model_id, model_version=adapter.model_version,
         prediction_source=adapter.source, predicted_at=datetime.now(timezone.utc),
         renewal_horizon_days=request.renewal_horizon_days,
-        churn_probability=adapter.predict(request.user_id, request.features, request.context),
+        churn_probability=float(probability),
     )
     await forward_to_analytics("/v1/ingest/predictions", result.model_dump(mode="json"))
     return result
