@@ -2,18 +2,33 @@
 
 NO estimate of discount treatment uplift or savings is made here.
 """
-from datetime import datetime, timezone
 import hashlib
 import json
-from decimal import Decimal, ROUND_HALF_UP
 import random
+from datetime import UTC, datetime
+from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal
+
 from shared.contracts.models import (
-    BreakEvenResult, ExperimentAssignment, RetentionPlanRequest, RetentionPlanResult,
+    BreakEvenResult,
+    ExperimentAssignment,
+    RetentionPlanRequest,
+    RetentionPlanResult,
 )
 
 
 def cents(value: float) -> int:
-    return int((Decimal(str(value)) * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return int((Decimal(str(value)) * 100).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+
+
+def budget_cents(value: float) -> int:
+    """Only whole cents of the stated budget are spendable."""
+    return int((Decimal(str(value)) * 100).to_integral_value(rounding=ROUND_FLOOR))
+
+
+def exposure_cents(price: float, discount: float) -> int:
+    """Reserve enough whole cents to cover the full face-value discount."""
+    exposure = Decimal(str(price)) * Decimal(str(discount)) * 100
+    return int(exposure.to_integral_value(rounding=ROUND_CEILING))
 
 
 def break_even(churn_probability: float, discount_fraction: float) -> BreakEvenResult:
@@ -21,14 +36,14 @@ def break_even(churn_probability: float, discount_fraction: float) -> BreakEvenR
         raise ValueError("churn_probability must be in [0,1]")
     if not 0 < discount_fraction < 1:
         raise ValueError("discount must be in (0,1)")
-    p0 = 1.0 - churn_probability
-    p_min = p0 / (1.0 - discount_fraction)
+    p0 = Decimal(1) - Decimal(str(churn_probability))
+    p_min = p0 / (Decimal(1) - Decimal(str(discount_fraction)))
     return BreakEvenResult(
-        baseline_renewal_probability=p0,
+        baseline_renewal_probability=float(p0),
         discount_fraction=discount_fraction,
-        min_post_offer_renewal_probability=p_min,
-        required_absolute_uplift=p_min - p0,
-        feasible_in_principle=p_min <= 1.0 + 1e-12,
+        min_post_offer_renewal_probability=float(p_min),
+        required_absolute_uplift=float(p_min - p0),
+        feasible_in_principle=p_min <= 1,
     )
 
 
@@ -44,7 +59,7 @@ def make_plan(req: RetentionPlanRequest) -> RetentionPlanResult:
         n_control = max(1, n_control)
     if len(users) > 1:
         n_control = min(n_control, len(users) - 1)
-    remaining_cents = cents(req.budget_usd)
+    remaining_cents = budget_cents(req.budget_usd)
     allocated_cents = 0
     result = []
     discounts = sorted(req.discounts)
@@ -65,7 +80,7 @@ def make_plan(req: RetentionPlanRequest) -> RetentionPlanResult:
         selected = None
         for discount in order:
             evaluation = break_even(user.churn_probability, discount)
-            exposure = cents(user.renewal_price_usd * discount)
+            exposure = exposure_cents(user.renewal_price_usd, discount)
             if evaluation.feasible_in_principle and exposure <= remaining_cents:
                 selected = (discount, exposure, evaluation)
                 break
@@ -93,7 +108,7 @@ def make_plan(req: RetentionPlanRequest) -> RetentionPlanResult:
     ).encode()).hexdigest()
     return RetentionPlanResult(
         experiment_id=req.experiment_id, app_id=req.app_id, request_fingerprint=fingerprint,
-        created_at=datetime.now(timezone.utc), budget_usd=req.budget_usd,
+        created_at=datetime.now(UTC), budget_usd=req.budget_usd,
         max_allocated_discount_exposure_usd=allocated_cents / 100,
         expected_baseline_revenue_at_risk_usd=sum(cents(c.renewal_price_usd * c.churn_probability) for c in users) / 100,
         unallocated_budget_usd=remaining_cents / 100,
