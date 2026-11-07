@@ -1,5 +1,11 @@
+from unittest.mock import AsyncMock
+
+import pytest
 from fastapi.testclient import TestClient
-from services.inference.app.main import app
+
+from services.inference.app import main as inference
+
+app = inference.app
 
 client = TestClient(app)
 PAYLOAD = {
@@ -41,3 +47,51 @@ def test_future_model_schema_is_adapter_controlled():
     schema = client.get("/v1/models/mock-churn-v1/schema").json()
     assert schema["type"] == "object"
     assert client.get("/v1/models/missing/schema").status_code == 404
+
+
+@pytest.mark.parametrize("invalid_probability", [float("nan"), float("inf"), -0.01, 1.01, "bad"])
+def test_invalid_adapter_output_fails_before_persistence(monkeypatch, invalid_probability):
+    class ExternalAdapter:
+        model_id = "external-test"
+        model_version = "v1"
+        source = "external"
+
+        def get_input_schema(self):
+            return {"type": "object"}
+
+        def predict(self, user_id, features, context):
+            return invalid_probability
+
+    forward = AsyncMock()
+    monkeypatch.setitem(inference.ADAPTERS, "external-test", ExternalAdapter())
+    monkeypatch.setattr(inference, "forward_to_analytics", forward)
+
+    response = TestClient(app, raise_server_exceptions=False).post(
+        "/v1/predict", json={**PAYLOAD, "model_id": "external-test"}
+    )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "Invalid model prediction"
+    forward.assert_not_awaited()
+
+
+def test_adapter_specific_feature_schema_rejects_invalid_input(monkeypatch):
+    class SchemaAdapter:
+        model_id = "schema-test"
+        model_version = "v1"
+        source = "external"
+
+        def get_input_schema(self):
+            return {
+                "type": "object",
+                "properties": {"sessions": {"type": "integer"}},
+                "required": ["sessions"],
+                "additionalProperties": False,
+            }
+
+        def predict(self, user_id, features, context):
+            return 0.4
+
+    monkeypatch.setitem(inference.ADAPTERS, "schema-test", SchemaAdapter())
+    response = client.post("/v1/predict", json={**PAYLOAD, "model_id": "schema-test", "features": {"sessions": "two"}})
+    assert response.status_code == 422

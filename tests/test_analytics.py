@@ -61,3 +61,53 @@ def test_churn_risk_optional_app_filter(monkeypatch, query, expected_params, exp
         assert fake_db.params in (None, ())
     assert "%s IS NULL" not in fake_db.sql
     assert "ORDER BY predicted_at ASC, user_id ASC" in fake_db.sql
+
+
+def test_prediction_model_provenance_survives_ingest_and_read(monkeypatch):
+    payload = {
+        "prediction_id": "pred-m1", "request_id": "req-m1", "app_id": "lumen-demo",
+        "user_id": "demo-u01", "model_id": "external-test", "model_version": "2026-11-07",
+        "prediction_source": "external", "predicted_at": "2026-11-07T12:00:00Z",
+        "renewal_horizon_days": 30, "churn_probability": 0.4,
+    }
+
+    class FakeDB:
+        rowcount = 0
+        values = None
+        selected_columns = None
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def cursor(self):
+            return self
+
+        def execute(self, sql, params):
+            if "INSERT INTO churn_predictions" in sql:
+                columns = sql.split("churn_predictions", 1)[1].split("VALUES", 1)[0]
+                names = [name.strip() for name in columns.strip(" ()\n").split(",")]
+                self.values = dict(zip(names, params))
+                self.rowcount = 1
+            else:
+                assert params == (payload["prediction_id"],)
+                assert "model_version" in sql and "prediction_source" in sql
+                columns = sql.split("SELECT", 1)[1].split("FROM", 1)[0]
+                self.selected_columns = [name.strip() for name in columns.split(",")]
+
+        def fetchone(self):
+            assert self.values is not None
+            return tuple(self.values[name] for name in self.selected_columns)
+
+    fake_db = FakeDB()
+    monkeypatch.setattr(analytics, "db_connect", lambda: fake_db)
+    api = TestClient(app)
+
+    ingested = api.post("/v1/ingest/predictions", json=payload)
+    assert ingested.status_code == 201
+    readback = api.get("/v1/predictions/pred-m1")
+    assert readback.status_code == 200
+    assert readback.json()["model_version"] == payload["model_version"]
+    assert readback.json()["prediction_source"] == payload["prediction_source"]

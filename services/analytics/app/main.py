@@ -85,14 +85,15 @@ def ingest_actual(observation: ActualObservation):
 def get_prediction(prediction_id: str):
     with db_connect() as conn, conn.cursor() as cur:
         cur.execute("""
-          SELECT prediction_id, app_id, user_id, model_id, prediction_source,
+          SELECT prediction_id, app_id, user_id, model_id, model_version, prediction_source,
                  churn_probability, predicted_at, renewal_horizon_days
           FROM churn_predictions WHERE prediction_id=%s
         """, (prediction_id,))
         row = cur.fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Prediction not found")
-    return dict(zip(("prediction_id", "app_id", "user_id", "model_id", "prediction_source",
+    return dict(zip(("prediction_id", "app_id", "user_id", "model_id", "model_version",
+                     "prediction_source",
                      "churn_probability", "predicted_at", "renewal_horizon_days"), row))
 
 
