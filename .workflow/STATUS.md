@@ -5,7 +5,7 @@
 - **M2 Discount economics & experiment planning** — DONE. Docker QA gate passed on `develop` SHA `40dd474fe879ed4959b4b6f8357cff44bae083be` (41 tests, Compose, HTTP mock demo and Grafana); promoted to `main`. Conservative cent-level allocation and fractional unallocated budget passed independent QA.
 - **M3 Analytics + Grafana** — DONE. Docker QA gate passed on `develop` SHA `0d23b0faf619e7684797a8db4c16dc7da964c0dc` (43 tests, Compose, HTTP mock demo, and live PostgreSQL/Grafana QA); promoted to `main`.
 - **M4 End-to-end & external handoff** — READY after M1-M3 integration; no real ML required for mock demo.
-- **M5 PoC model lifecycle** — PLANNED. Lead must freeze churn prediction, risk-cohort, Adapty draft and event interfaces; external ML baseline and documented A/B integration are dependencies. Churn Grafana and Adapty draft jobs are tracked in M5.
+- **M5 PoC model lifecycle** — PLANNED. Prediction-output dashboard job M5-GR-001 is integrated on `develop` but M5 has not passed its gate. Lead must freeze churn prediction, risk-cohort, Adapty draft and event interfaces; external ML baseline and documented A/B integration are dependencies. A/B lineage panels and draft creation remain blocked.
 - **M6 Standalone frozen model** — PLANNED. Depends on PoC outcomes and validation criteria; model training remains external.
 
 Lead updates status on main. Do not mark any milestone DONE until develop gate passes at its exact commit SHA.
