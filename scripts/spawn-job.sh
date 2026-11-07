@@ -13,7 +13,7 @@ git -C "$DEV" ls-files --error-unmatch ".workflow/jobs/$JOB.md" >/dev/null || {
 }
 ROLE="$(sed -n 's/^role: //p' "$JOBFILE" | head -n 1)"
 STATUS="$(sed -n 's/^status: //p' "$JOBFILE" | head -n 1)"
-case "$ROLE" in backend|analytics|qa) ;; *) echo "Unknown worker role: $ROLE" >&2; exit 1;; esac
+case "$ROLE" in backend|analytics|grafana|qa) ;; *) echo "Unknown worker role: $ROLE" >&2; exit 1;; esac
 [[ "$STATUS" == READY ]] || { echo "Job must be READY (got $STATUS)" >&2; exit 1; }
 BRANCH="task/$JOB"
 if [[ "$JOB" == FIX-* ]]; then BRANCH="fix/$JOB"; fi
@@ -34,6 +34,7 @@ Read in this order:
 2. Your scoped AGENTS.md:
    - backend: \`services/inference/AGENTS.md\`
    - analytics: \`services/analytics/AGENTS.md\`
+   - grafana: \`grafana/AGENTS.md\`
    - qa: \`tests/AGENTS.md\`
 3. \`.workflow/jobs/$JOB.md\`
 4. Referenced \`contracts/schemas/*\` only when necessary.
