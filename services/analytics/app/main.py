@@ -95,10 +95,23 @@ def ingest_actual(observation: ActualObservation):
               (observation_id, app_id, metric_name, metric_value, observed_at, dimensions, source)
             VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s)
             ON CONFLICT (observation_id) DO NOTHING
+            RETURNING observation_id
         """, (observation.observation_id, observation.app_id, observation.metric_name,
               observation.metric_value, observation.observed_at,
               json.dumps(observation.dimensions), observation.source))
-        inserted = cur.rowcount == 1
+        inserted = cur.fetchone() is not None
+        if not inserted:
+            cur.execute("""
+                SELECT app_id, metric_name, metric_value, observed_at, dimensions, source
+                FROM actual_observations WHERE observation_id = %s
+            """, (observation.observation_id,))
+            stored = cur.fetchone()
+            expected = (
+                observation.app_id, observation.metric_name, observation.metric_value,
+                observation.observed_at, observation.dimensions, observation.source,
+            )
+            if stored != expected:
+                raise HTTPException(status_code=409, detail="observation_id already exists with different content")
     return {"status": "stored" if inserted else "duplicate", "observation_id": observation.observation_id}
 
 

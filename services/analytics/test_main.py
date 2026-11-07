@@ -8,11 +8,12 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from shared.contracts.models import ChurnPredictionResult, RetentionPlanResult
+from shared.contracts.models import ActualObservation, ChurnPredictionResult, RetentionPlanResult
 from services.analytics.app.main import (
     db_connect,
     get_experiment,
     get_prediction,
+    ingest_actual,
     ingest_experiment,
     ingest_prediction,
 )
@@ -60,6 +61,19 @@ class IngestionTests(unittest.TestCase):
         }
         data.update(changes)
         return RetentionPlanResult.model_validate(data)
+
+    def actual(self, **changes):
+        data = {
+            "observation_id": str(uuid4()),
+            "app_id": "app-1",
+            "metric_name": "renewals",
+            "metric_value": 1.0,
+            "observed_at": datetime.now(timezone.utc),
+            "dimensions": {"cohort": "test"},
+            "source": "demo",
+        }
+        data.update(changes)
+        return ActualObservation.model_validate(data)
 
     def test_prediction_retries_and_readback(self):
         original = self.prediction()
@@ -125,6 +139,27 @@ class IngestionTests(unittest.TestCase):
                 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
                     results = list(pool.map(attempt, (original, conflicting)))
                 self.assertCountEqual(results, ("stored", 409))
+
+    def test_actual_retries_and_conflicts_are_isolated_from_scenarios(self):
+        original = self.actual()
+        self.assertEqual(ingest_actual(original)["status"], "stored")
+        self.assertEqual(ingest_actual(original)["status"], "duplicate")
+        for field, value in (
+            ("metric_value", 2.0),
+            ("observed_at", original.observed_at + timedelta(seconds=1)),
+            ("dimensions", {"cohort": "changed"}),
+            ("source", "external"),
+        ):
+            with self.subTest(field=field), self.assertRaises(HTTPException) as caught:
+                ingest_actual(original.model_copy(update={field: value}))
+            self.assertEqual(caught.exception.status_code, 409)
+        with db_connect() as conn, conn.cursor() as cur:
+            cur.execute("SELECT metric_value, dimensions FROM actual_observations WHERE observation_id = %s",
+                        (original.observation_id,))
+            self.assertEqual(cur.fetchone(), (1.0, {"cohort": "test"}))
+            cur.execute("SELECT count(*) FROM retention_experiments WHERE experiment_id = %s",
+                        (original.observation_id,))
+            self.assertEqual(cur.fetchone()[0], 0)
 
 
 if __name__ == "__main__":
