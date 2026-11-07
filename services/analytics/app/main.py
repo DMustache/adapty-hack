@@ -26,34 +26,55 @@ def ingest_prediction(prediction: ChurnPredictionResult):
                prediction_source, predicted_at, renewal_horizon_days, churn_probability)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (prediction_id) DO NOTHING
+            RETURNING prediction_id
         """, (
             prediction.prediction_id, prediction.request_id, prediction.app_id,
             prediction.user_id, prediction.model_id, prediction.model_version,
             prediction.prediction_source, prediction.predicted_at,
             prediction.renewal_horizon_days, prediction.churn_probability,
         ))
-        inserted = cur.rowcount == 1
+        inserted = cur.fetchone() is not None
+        if not inserted:
+            # A separate statement sees a concurrent insert after ON CONFLICT has waited for it.
+            cur.execute("""
+                SELECT request_id, app_id, user_id, model_id, model_version,
+                       prediction_source, renewal_horizon_days, churn_probability
+                FROM churn_predictions WHERE prediction_id = %s
+            """, (prediction.prediction_id,))
+            stored = cur.fetchone()
+            stable_fields = (
+                prediction.request_id, prediction.app_id, prediction.user_id,
+                prediction.model_id, prediction.model_version, prediction.prediction_source,
+                prediction.renewal_horizon_days, prediction.churn_probability,
+            )
+            if stored != stable_fields:
+                raise HTTPException(status_code=409, detail="prediction_id already exists with different content")
     return {"status": "stored" if inserted else "duplicate", "prediction_id": prediction.prediction_id}
 
 
 @app.post("/v1/ingest/experiments", status_code=201)
 def ingest_experiment(plan: RetentionPlanResult):
     # Immutable experiment snapshots. Duplicate ID + different payload is rejected rather than overwritten.
-    payload = json.dumps(plan.model_dump(mode="json"), sort_keys=True)
+    result = plan.model_dump(mode="json")
+    payload = json.dumps(result, sort_keys=True)
     with db_connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT payload FROM retention_experiments WHERE experiment_id = %s", (plan.experiment_id,))
-        existing = cur.fetchone()
-        if existing:
-            if existing[0].get("request_fingerprint") != plan.request_fingerprint:
-                raise HTTPException(status_code=409, detail="experiment_id already exists for another request")
-            return {"status": "duplicate", "experiment_id": plan.experiment_id}
         cur.execute("""
             INSERT INTO retention_experiments
               (experiment_id, app_id, created_at, budget_usd, max_exposure_usd, payload)
             VALUES (%s,%s,%s,%s,%s,%s::jsonb)
+            ON CONFLICT (experiment_id) DO NOTHING
+            RETURNING experiment_id
         """, (plan.experiment_id, plan.app_id, plan.created_at, plan.budget_usd,
               plan.max_allocated_discount_exposure_usd, payload))
-    return {"status": "stored", "experiment_id": plan.experiment_id}
+        inserted = cur.fetchone() is not None
+        if not inserted:
+            cur.execute("SELECT payload FROM retention_experiments WHERE experiment_id = %s", (plan.experiment_id,))
+            stored = cur.fetchone()[0]
+            if stored.get("request_fingerprint") != plan.request_fingerprint:
+                raise HTTPException(status_code=409, detail="experiment_id already exists for another request")
+            if stored != result:
+                raise HTTPException(status_code=409, detail="experiment_id already exists with different content")
+    return {"status": "stored" if inserted else "duplicate", "experiment_id": plan.experiment_id}
 
 
 @app.get("/v1/experiments/{experiment_id}")
@@ -85,14 +106,14 @@ def ingest_actual(observation: ActualObservation):
 def get_prediction(prediction_id: str):
     with db_connect() as conn, conn.cursor() as cur:
         cur.execute("""
-          SELECT prediction_id, app_id, user_id, model_id, model_version, prediction_source,
+          SELECT prediction_id, request_id, app_id, user_id, model_id, model_version, prediction_source,
                  churn_probability, predicted_at, renewal_horizon_days
           FROM churn_predictions WHERE prediction_id=%s
         """, (prediction_id,))
         row = cur.fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Prediction not found")
-    return dict(zip(("prediction_id", "app_id", "user_id", "model_id", "model_version",
+    return dict(zip(("prediction_id", "request_id", "app_id", "user_id", "model_id", "model_version",
                      "prediction_source",
                      "churn_probability", "predicted_at", "renewal_horizon_days"), row))
 
