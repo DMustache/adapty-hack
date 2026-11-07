@@ -7,5 +7,6 @@
 - **M4 End-to-end & external handoff** — READY after M1-M3 integration; no real ML required for mock demo.
 - **M5 PoC model lifecycle** — PLANNED. Lead must freeze event/model interfaces; external ML baseline and documented A/B integration are dependencies.
 - **M6 Standalone frozen model** — PLANNED. Depends on PoC outcomes and validation criteria; model training remains external.
+- **M7 Cohort Discount Advisor** — PLANNED after M4. Branch `origin/model-implementation` at `253b5bd` is a synthetic-data discount experiment advisor, not the external churn model. Lead must freeze separate I/O before worker dispatch; the live Adapty app has no verified discount treatment flow, so no A/B draft or activation is ready.
 
 Lead updates status on main. Do not mark any milestone DONE until develop gate passes at its exact commit SHA.
