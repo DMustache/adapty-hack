@@ -9,3 +9,7 @@ __pycache__/
 .env
 *.log
 .DS_Store
+
+# Local onboarding prompts for this checkout.
+/START_HERE.md
+/LEAD_START_PROMPT.md
