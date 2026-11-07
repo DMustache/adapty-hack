@@ -190,7 +190,9 @@ def test_m3_postgres_ingestion_idempotency_and_dashboard_queries():
         mock_sql = mock_sql.replace("$__timeFilter(predicted_at)",
             f"prediction_id IN ('{pred['prediction_id']}','{external['prediction_id']}')")
         mock_value = _psql(f"SELECT row_to_json(t) FROM ({mock_sql}) t")
-        assert json.loads(mock_value)["Mock churn risk"] == pytest.approx(0.8)
+        mock_series = {key: value for key, value in json.loads(mock_value).items() if key != "time"}
+        assert len(mock_series) == 1
+        assert next(iter(mock_series.values())) == pytest.approx(0.8)
         for panel_id in (2, 3, 4):
             sql = panels[panel_id]["targets"][0]["rawSql"]
             sql = re.sub(r"\$__timeFilter\([^)]*\)",
