@@ -3,45 +3,50 @@
   "uid": "smart-retention",
   "title": "Smart Retention Offers — Scenario Experiment (Synthetic)",
   "tags": ["adapty", "retention", "scenario", "mock"],
-  "timezone": "utc", "schemaVersion": 39, "version": 1, "editable": false,
+  "timezone": "utc", "schemaVersion": 39, "version": 2, "editable": false,
   "refresh": "15s", "time": {"from": "now-7d", "to": "now"},
   "annotations": {"list": []},
   "panels": [
     {
-      "id": 1, "type": "timeseries", "title": "Mean mock churn probability (NOT real model validation)",
+      "id": 1, "type": "timeseries", "title": "Mean stored mock churn probability",
+      "description": "Synthetic fixture predictions only; this is not model validation. UTC prediction time.",
       "datasource": {"type": "postgres", "uid": "adapty-pg"},
       "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
       "fieldConfig": {"defaults": {"min": 0, "max": 1}, "overrides": []},
       "targets": [{"refId": "A", "format": "time_series", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT date_trunc('minute', predicted_at) AS \"time\", AVG(churn_probability) AS \"Mock churn risk\" FROM churn_predictions WHERE $__timeFilter(predicted_at) GROUP BY 1 ORDER BY 1"}]
+        "rawSql": "SELECT date_trunc('minute', predicted_at) AS \"time\", AVG(churn_probability) AS \"Mean mock churn probability\" FROM churn_predictions WHERE prediction_source = 'mock' AND $__timeFilter(predicted_at) GROUP BY 1 ORDER BY 1"}]
     },
     {
-      "id": 2, "type": "timeseries", "title": "Maximum discount budget exposure (NOT realized cost)",
+      "id": 2, "type": "timeseries", "title": "Scenario maximum face-value discount exposure vs budget",
+      "description": "Stored maximum allocated discount exposure and stated budget for each proposal, in USD. Neither is realized cost. UTC proposal time.",
       "datasource": {"type": "postgres", "uid": "adapty-pg"},
       "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
       "targets": [{"refId": "A", "format": "time_series", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT created_at AS \"time\", max_exposure_usd::double precision AS \"Allocated max exposure ($)\", budget_usd::double precision AS \"Budget ($)\" FROM retention_experiments WHERE $__timeFilter(created_at) ORDER BY 1"}]
+        "rawSql": "SELECT created_at AS \"time\", max_exposure_usd::double precision AS \"Maximum face-value exposure (USD)\", budget_usd::double precision AS \"Scenario budget (USD)\" FROM retention_experiments WHERE $__timeFilter(created_at) ORDER BY 1"}]
     },
     {
-      "id": 3, "type": "barchart", "title": "Randomized control / offer arm allocation",
+      "id": 3, "type": "barchart", "title": "Scenario arm assignments (control, offer, no offer)",
+      "description": "Counts assignments across stored proposals in the selected UTC time range. A user may appear in more than one proposal; counts are not unique users or observed treatment groups.",
       "datasource": {"type": "postgres", "uid": "adapty-pg"},
       "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
       "targets": [{"refId": "A", "format": "table", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT assignment->>'arm' AS \"Arm\", COUNT(*)::integer AS \"Users\" FROM retention_experiments e CROSS JOIN LATERAL jsonb_array_elements(e.payload->'assignments') assignment WHERE $__timeFilter(e.created_at) GROUP BY 1 ORDER BY 1"}]
+        "rawSql": "SELECT assignment->>'arm' AS \"Arm\", COUNT(*)::integer AS \"Proposed assignments\" FROM retention_experiments e CROSS JOIN LATERAL jsonb_array_elements(e.payload->'assignments') assignment WHERE $__timeFilter(e.created_at) GROUP BY 1 ORDER BY 1"}]
     },
     {
-      "id": 4, "type": "barchart", "title": "Required renewal probability uplift to break even (NOT estimated impact)",
+      "id": 4, "type": "barchart", "title": "Scenario mean break-even hurdle by offer arm (pp)",
+      "description": "Mean stored algebraic increase in renewal probability required to break even on immediate gross renewal revenue, in percentage points. This is not measured or estimated treatment uplift.",
       "datasource": {"type": "postgres", "uid": "adapty-pg"},
       "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
       "targets": [{"refId": "A", "format": "table", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT assignment->>'arm' AS \"Arm\", ROUND((100 * AVG((assignment->>'required_absolute_uplift')::numeric)),2)::double precision AS \"Required uplift (pp)\" FROM retention_experiments e CROSS JOIN LATERAL jsonb_array_elements(e.payload->'assignments') assignment WHERE $__timeFilter(e.created_at) AND assignment->>'required_absolute_uplift' IS NOT NULL GROUP BY 1 ORDER BY 1"}]
+        "rawSql": "SELECT assignment->>'arm' AS \"Offer arm\", ROUND((100 * AVG((assignment->>'required_absolute_uplift')::numeric)), 2)::double precision AS \"Mean required uplift (pp)\" FROM retention_experiments e CROSS JOIN LATERAL jsonb_array_elements(e.payload->'assignments') assignment WHERE $__timeFilter(e.created_at) AND assignment->>'arm' LIKE 'discount_%' AND assignment->>'required_absolute_uplift' IS NOT NULL GROUP BY 1 ORDER BY 1"}]
     },
     {
-      "id": 5, "type": "timeseries", "title": "Expected renewal revenue at risk (baseline, not saved revenue)",
+      "id": 5, "type": "timeseries", "title": "Scenario baseline revenue at risk (not savings)",
+      "description": "Stored baseline estimate from each experiment proposal, in USD. No discount outcome or savings is implied. UTC proposal time.",
       "datasource": {"type": "postgres", "uid": "adapty-pg"},
       "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
       "targets": [{"refId": "A", "format": "time_series", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT created_at AS \"time\", (payload->>'expected_baseline_revenue_at_risk_usd')::double precision AS \"Expected revenue at risk ($)\" FROM retention_experiments WHERE $__timeFilter(created_at) ORDER BY 1"}]
+        "rawSql": "SELECT created_at AS \"time\", (payload->>'expected_baseline_revenue_at_risk_usd')::double precision AS \"Baseline revenue at risk (USD)\" FROM retention_experiments WHERE $__timeFilter(created_at) ORDER BY 1"}]
     }
   ]
 }
