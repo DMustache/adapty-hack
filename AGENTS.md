@@ -6,6 +6,7 @@
 - **Lead/main**: read `.workflow/roles/lead.md`, `.workflow/README.md`, active milestone only.
 - **Backend worktree**: read `services/inference/AGENTS.md`, assigned `.workflow/jobs/<ID>.md`.
 - **Analytics worktree**: read `services/analytics/AGENTS.md`, assigned job.
+- **Grafana worktree**: read `grafana/AGENTS.md`, assigned job.
 - **QA worktree**: read `tests/AGENTS.md`, assigned job.
 
 ## Non-negotiable rules
