@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "request_id": "sample-001",
+  "app_id": "lumen-demo",
+  "user_id": "demo-u01",
+  "model_id": "mock-churn-v1",
+  "renewal_horizon_days": 30,
+  "context": {
+    "platform": "ios"
+  },
+  "features": {
+    "sessions_last_7d": 3
+  }
+}

@@ -1,0 +1,12 @@
+# Defect reference
+- ID:
+- Milestone:
+- Develop commit SHA:
+- Gate command:
+- Expected behavior:
+- Actual behavior:
+- Log/error excerpt:
+- Owner role:
+- Minimal reproduction:
+- Regression test:
+- Acceptance criteria:

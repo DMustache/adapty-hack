@@ -1,0 +1,101 @@
+{
+  "$defs": {
+    "RetentionCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "user_id": {
+          "minLength": 1,
+          "title": "User Id",
+          "type": "string"
+        },
+        "churn_probability": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Churn Probability",
+          "type": "number"
+        },
+        "renewal_price_usd": {
+          "exclusiveMinimum": 0,
+          "title": "Renewal Price Usd",
+          "type": "number"
+        },
+        "plan_type": {
+          "enum": [
+            "weekly",
+            "monthly"
+          ],
+          "title": "Plan Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "user_id",
+        "churn_probability",
+        "renewal_price_usd",
+        "plan_type"
+      ],
+      "title": "RetentionCandidate",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "app_id": {
+      "minLength": 1,
+      "title": "App Id",
+      "type": "string"
+    },
+    "experiment_id": {
+      "minLength": 1,
+      "title": "Experiment Id",
+      "type": "string"
+    },
+    "budget_usd": {
+      "minimum": 0,
+      "title": "Budget Usd",
+      "type": "number"
+    },
+    "control_share": {
+      "default": 0.2,
+      "exclusiveMaximum": 1,
+      "minimum": 0,
+      "title": "Control Share",
+      "type": "number"
+    },
+    "discounts": {
+      "items": {
+        "type": "number"
+      },
+      "minItems": 1,
+      "title": "Discounts",
+      "type": "array"
+    },
+    "random_seed": {
+      "default": 42,
+      "title": "Random Seed",
+      "type": "integer"
+    },
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/RetentionCandidate"
+      },
+      "minItems": 1,
+      "title": "Candidates",
+      "type": "array"
+    }
+  },
+  "required": [
+    "app_id",
+    "experiment_id",
+    "budget_usd",
+    "candidates"
+  ],
+  "title": "RetentionPlanRequest",
+  "type": "object"
+}

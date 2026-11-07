@@ -1,0 +1,72 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "prediction_id": {
+      "title": "Prediction Id",
+      "type": "string"
+    },
+    "request_id": {
+      "title": "Request Id",
+      "type": "string"
+    },
+    "app_id": {
+      "title": "App Id",
+      "type": "string"
+    },
+    "user_id": {
+      "title": "User Id",
+      "type": "string"
+    },
+    "model_id": {
+      "title": "Model Id",
+      "type": "string"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "prediction_source": {
+      "enum": [
+        "mock",
+        "external"
+      ],
+      "title": "Prediction Source",
+      "type": "string"
+    },
+    "predicted_at": {
+      "format": "date-time",
+      "title": "Predicted At",
+      "type": "string"
+    },
+    "renewal_horizon_days": {
+      "title": "Renewal Horizon Days",
+      "type": "integer"
+    },
+    "churn_probability": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Churn Probability",
+      "type": "number"
+    }
+  },
+  "required": [
+    "prediction_id",
+    "request_id",
+    "app_id",
+    "user_id",
+    "model_id",
+    "model_version",
+    "prediction_source",
+    "predicted_at",
+    "renewal_horizon_days",
+    "churn_probability"
+  ],
+  "title": "ChurnPredictionResult",
+  "type": "object"
+}

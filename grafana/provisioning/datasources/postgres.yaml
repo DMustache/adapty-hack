@@ -1,0 +1,16 @@
+apiVersion: 1
+datasources:
+  - name: Adapty Predictions PostgreSQL
+    uid: adapty-pg
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: grafana_ro
+    isDefault: true
+    jsonData:
+      database: $GF_POSTGRES_DB_NAME
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+    secureJsonData:
+      password: $GF_DB_READ_PASSWORD

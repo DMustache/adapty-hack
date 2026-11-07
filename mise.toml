@@ -1,0 +1,26 @@
+[tools]
+python = "3.12.16"
+
+[tasks.setup]
+description = "Create the local virtual environment and install test dependencies"
+run = "python -m venv .venv && .venv/bin/python -m pip install -r requirements-dev.txt"
+
+[tasks.test]
+description = "Run unit and contract tests"
+run = ".venv/bin/python -m pytest -q"
+
+[tasks.lint]
+description = "Check Python code with Ruff"
+run = ".venv/bin/python -m ruff check ."
+
+[tasks.up]
+description = "Build and start the local services"
+run = "docker compose up --build -d"
+
+[tasks.down]
+description = "Stop the local services"
+run = "docker compose down"
+
+[tasks.smoke]
+description = "Run the HTTP demo smoke test against the local services"
+run = "python scripts/smoke_demo.py"

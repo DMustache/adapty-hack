@@ -1,0 +1,56 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "request_id": {
+      "minLength": 1,
+      "title": "Request Id",
+      "type": "string"
+    },
+    "app_id": {
+      "minLength": 1,
+      "title": "App Id",
+      "type": "string"
+    },
+    "user_id": {
+      "minLength": 1,
+      "title": "User Id",
+      "type": "string"
+    },
+    "model_id": {
+      "minLength": 1,
+      "title": "Model Id",
+      "type": "string"
+    },
+    "renewal_horizon_days": {
+      "maximum": 365,
+      "minimum": 1,
+      "title": "Renewal Horizon Days",
+      "type": "integer"
+    },
+    "context": {
+      "additionalProperties": true,
+      "title": "Context",
+      "type": "object"
+    },
+    "features": {
+      "additionalProperties": true,
+      "title": "Features",
+      "type": "object"
+    }
+  },
+  "required": [
+    "request_id",
+    "app_id",
+    "user_id",
+    "model_id",
+    "renewal_horizon_days"
+  ],
+  "title": "ChurnPredictionRequest",
+  "type": "object"
+}

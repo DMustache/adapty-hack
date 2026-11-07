@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "app_id": "lumen-demo",
+  "experiment_id": "demo-001",
+  "budget_usd": 3.0,
+  "control_share": 0.25,
+  "discounts": [
+    0.1,
+    0.2,
+    0.3
+  ],
+  "random_seed": 42,
+  "candidates": [
+    {
+      "user_id": "demo-u01",
+      "churn_probability": 0.8,
+      "renewal_price_usd": 9.99,
+      "plan_type": "monthly"
+    },
+    {
+      "user_id": "demo-u02",
+      "churn_probability": 0.45,
+      "renewal_price_usd": 4.99,
+      "plan_type": "weekly"
+    },
+    {
+      "user_id": "demo-u03",
+      "churn_probability": 0.25,
+      "renewal_price_usd": 4.99,
+      "plan_type": "weekly"
+    },
+    {
+      "user_id": "demo-u04",
+      "churn_probability": 0.7,
+      "renewal_price_usd": 9.99,
+      "plan_type": "monthly"
+    }
+  ]
+}

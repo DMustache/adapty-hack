@@ -1,0 +1,159 @@
+{
+  "$defs": {
+    "ExperimentAssignment": {
+      "properties": {
+        "user_id": {
+          "title": "User Id",
+          "type": "string"
+        },
+        "plan_type": {
+          "enum": [
+            "weekly",
+            "monthly"
+          ],
+          "title": "Plan Type",
+          "type": "string"
+        },
+        "arm": {
+          "title": "Arm",
+          "type": "string"
+        },
+        "discount_fraction": {
+          "title": "Discount Fraction",
+          "type": "number"
+        },
+        "max_discount_exposure_usd": {
+          "title": "Max Discount Exposure Usd",
+          "type": "number"
+        },
+        "renewal_price_usd": {
+          "title": "Renewal Price Usd",
+          "type": "number"
+        },
+        "expected_revenue_at_risk_usd": {
+          "title": "Expected Revenue At Risk Usd",
+          "type": "number"
+        },
+        "baseline_renewal_probability": {
+          "title": "Baseline Renewal Probability",
+          "type": "number"
+        },
+        "min_post_offer_renewal_probability": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Post Offer Renewal Probability"
+        },
+        "required_absolute_uplift": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Required Absolute Uplift"
+        }
+      },
+      "required": [
+        "user_id",
+        "plan_type",
+        "arm",
+        "discount_fraction",
+        "max_discount_exposure_usd",
+        "renewal_price_usd",
+        "expected_revenue_at_risk_usd",
+        "baseline_renewal_probability"
+      ],
+      "title": "ExperimentAssignment",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "experiment_id": {
+      "title": "Experiment Id",
+      "type": "string"
+    },
+    "app_id": {
+      "title": "App Id",
+      "type": "string"
+    },
+    "request_fingerprint": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Request Fingerprint",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "plan_source": {
+      "const": "scenario_experiment",
+      "default": "scenario_experiment",
+      "title": "Plan Source",
+      "type": "string"
+    },
+    "modeled_discount_uplift": {
+      "default": false,
+      "title": "Modeled Discount Uplift",
+      "type": "boolean"
+    },
+    "budget_usd": {
+      "title": "Budget Usd",
+      "type": "number"
+    },
+    "max_allocated_discount_exposure_usd": {
+      "title": "Max Allocated Discount Exposure Usd",
+      "type": "number"
+    },
+    "expected_baseline_revenue_at_risk_usd": {
+      "title": "Expected Baseline Revenue At Risk Usd",
+      "type": "number"
+    },
+    "unallocated_budget_usd": {
+      "title": "Unallocated Budget Usd",
+      "type": "number"
+    },
+    "assignments": {
+      "items": {
+        "$ref": "#/$defs/ExperimentAssignment"
+      },
+      "title": "Assignments",
+      "type": "array"
+    },
+    "disclaimer": {
+      "title": "Disclaimer",
+      "type": "string"
+    }
+  },
+  "required": [
+    "experiment_id",
+    "app_id",
+    "request_fingerprint",
+    "created_at",
+    "budget_usd",
+    "max_allocated_discount_exposure_usd",
+    "expected_baseline_revenue_at_risk_usd",
+    "unallocated_budget_usd",
+    "assignments",
+    "disclaimer"
+  ],
+  "title": "RetentionPlanResult",
+  "type": "object"
+}

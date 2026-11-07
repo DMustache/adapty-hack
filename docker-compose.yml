@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-adapty_demo}
+      POSTGRES_USER: ${POSTGRES_USER:-adapty_demo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo_change_me}
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-demo_change_me_ro}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-adapty_demo} -d ${POSTGRES_DB:-adapty_demo}"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+  analytics:
+    build:
+      context: .
+      dockerfile: services/analytics/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-adapty_demo}:${POSTGRES_PASSWORD:-demo_change_me}@postgres:5432/${POSTGRES_DB:-adapty_demo}
+    ports:
+      - "127.0.0.1:8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+  inference:
+    build:
+      context: .
+      dockerfile: services/inference/Dockerfile
+    environment:
+      ANALYTICS_URL: http://analytics:8000
+    ports:
+      - "127.0.0.1:8001:8000"
+    depends_on:
+      - analytics
+  grafana:
+    image: grafana/grafana:12.0.0
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin_demo}
+      GF_DB_READ_PASSWORD: ${GRAFANA_DB_PASSWORD:-demo_change_me_ro}
+      GF_POSTGRES_DB_NAME: ${POSTGRES_DB:-adapty_demo}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  pgdata:

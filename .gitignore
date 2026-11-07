@@ -1,0 +1,11 @@
+# Each worktree is a separate Git checkout. Never commit these.
+.worktrees/
+.agent-runtime/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+.env
+*.log
+.DS_Store
