@@ -24,6 +24,10 @@ REPORT="$REPORTDIR/$MS.log"
   docker compose up --build -d
   echo "--- end-to-end smoke ---"
   python scripts/smoke_demo.py
+  if [[ "$MS" =~ ^M([3-9]|[1-9][0-9]+)$ ]]; then
+    echo "--- live M3 analytics and Grafana QA ---"
+    M3_QA_INTEGRATION=1 python -m pytest -q tests/test_m3_analytics_contract.py -k postgres_ingestion
+  fi
   echo "GATE PASS $MS $SHA"
 ) 2>&1 | tee "$REPORT"
 # With pipefail, failures above stop this script before the marker is written.
