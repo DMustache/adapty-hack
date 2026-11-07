@@ -37,6 +37,17 @@ def request(method: str, url: str, payload=None, auth=None):
         return json.load(resp)
 
 
+def wait_for_dashboard(user: str, password: str):
+    url = GRAFANA + "/api/dashboards/uid/smart-retention"
+    for attempt in range(40):
+        try:
+            return request("GET", url, auth=(user, password))
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404 or attempt == 39:
+                raise
+            time.sleep(1)
+
+
 def main():
     for i in range(40):
         try:
@@ -90,7 +101,7 @@ def main():
             time.sleep(1)
     user = env_config("GF_SECURITY_ADMIN_USER", "admin")
     password = env_config("GF_SECURITY_ADMIN_PASSWORD", "admin_demo")
-    board = request("GET", GRAFANA + "/api/dashboards/uid/smart-retention", auth=(user, password))
+    board = wait_for_dashboard(user, password)
     assert board["dashboard"]["uid"] == "smart-retention"
     print("PASS: mock churn -> break-even/budget experiment -> Analytics -> PostgreSQL + Grafana")
     print("NO inferred discount uplift/savings; demo model predictions are static fixtures")
