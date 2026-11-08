@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from jsonschema import Draft202012Validator
 
 from shared.contracts.models import ActualObservation, ChurnPredictionResult, RetentionPlanResult
@@ -45,8 +45,8 @@ def ingest_prediction(prediction: ChurnPredictionResult):
             INSERT INTO churn_predictions
               (prediction_id, request_id, app_id, user_id, model_id, model_version,
                prediction_source, predicted_at, renewal_horizon_days, churn_probability,
-               as_of_at, renewal_due_at, renewal_price_usd)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               as_of_at, renewal_due_at, renewal_price_usd, plan_type)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (prediction_id) DO NOTHING
             RETURNING prediction_id
         """, (
@@ -55,6 +55,7 @@ def ingest_prediction(prediction: ChurnPredictionResult):
             prediction.prediction_source, prediction.predicted_at,
             prediction.renewal_horizon_days, prediction.churn_probability,
             prediction.as_of_at, prediction.renewal_due_at, prediction.renewal_price_usd,
+            prediction.plan_type,
         ))
         inserted = cur.fetchone() is not None
         if not inserted:
@@ -62,7 +63,7 @@ def ingest_prediction(prediction: ChurnPredictionResult):
             cur.execute("""
                 SELECT request_id, app_id, user_id, model_id, model_version,
                        prediction_source, renewal_horizon_days, churn_probability,
-                       as_of_at, renewal_due_at, renewal_price_usd
+                       as_of_at, renewal_due_at, renewal_price_usd, plan_type
                 FROM churn_predictions WHERE prediction_id = %s
             """, (prediction.prediction_id,))
             stored = cur.fetchone()
@@ -73,7 +74,8 @@ def ingest_prediction(prediction: ChurnPredictionResult):
             )
             if stored is None or stored[:8] != stable_fields or stored[8:10] != (
                 prediction.as_of_at, prediction.renewal_due_at
-            ) or (float(stored[10]) if stored[10] is not None else None) != prediction.renewal_price_usd:
+            ) or (float(stored[10]) if stored[10] is not None else None) != prediction.renewal_price_usd \
+                    or stored[11] != prediction.plan_type:
                 raise HTTPException(status_code=409, detail="prediction_id already exists with different content")
     return {"status": "stored" if inserted else "duplicate", "prediction_id": prediction.prediction_id}
 
@@ -216,7 +218,7 @@ def get_prediction(prediction_id: str):
         cur.execute("""
           SELECT prediction_id, request_id, app_id, user_id, model_id, model_version, prediction_source,
                  churn_probability, predicted_at, renewal_horizon_days,
-                 as_of_at, renewal_due_at, renewal_price_usd
+                 as_of_at, renewal_due_at, renewal_price_usd, plan_type
           FROM churn_predictions WHERE prediction_id=%s
         """, (prediction_id,))
         row = cur.fetchone()
@@ -225,7 +227,7 @@ def get_prediction(prediction_id: str):
     out = dict(zip(("prediction_id", "request_id", "app_id", "user_id", "model_id", "model_version",
                     "prediction_source",
                     "churn_probability", "predicted_at", "renewal_horizon_days",
-                    "as_of_at", "renewal_due_at", "renewal_price_usd"), row))
+                    "as_of_at", "renewal_due_at", "renewal_price_usd", "plan_type"), row))
     if out.get("renewal_price_usd") is not None:
         out["renewal_price_usd"] = float(out["renewal_price_usd"])
     return out
@@ -281,3 +283,68 @@ def churn_trajectory(user_id: str, app_id: str | None = None, model_id: str | No
          "expected_revenue_at_risk_usd": num(risk)}
         for pid, app, mid, ts, due, p, prev, delta, risk in rows
     ]}
+
+
+@app.get("/v1/retention/at-risk")
+def retention_at_risk(
+    app_id: str = Query(min_length=1),
+    model_id: str = "lumen-temporal-catboost",
+    model_version: str = "1.0.0",
+    as_of: datetime | None = None,
+    max_age_days: float = Query(default=7, gt=0, le=365),
+    limit: int = Query(default=1000, ge=1, le=100_000),
+):
+    """Read-only planner candidates from stored, cutoff-safe predictions."""
+    if as_of is not None and (as_of.tzinfo is None or as_of.utcoffset().total_seconds() != 0):
+        raise HTTPException(status_code=422, detail="as_of must be UTC")
+    params = {"app_id": app_id, "model_id": model_id, "model_version": model_version, "as_of": as_of}
+    with db_connect() as conn, conn.cursor() as cur:
+        cur.execute("""
+            WITH valid AS (
+              SELECT prediction_id, app_id, user_id, model_id, model_version, prediction_source,
+                     plan_type, predicted_at, as_of_at, renewal_due_at, churn_probability,
+                     renewal_price_usd::double precision AS renewal_price_usd
+              FROM churn_predictions
+              WHERE app_id = %(app_id)s AND model_id = %(model_id)s
+                AND model_version = %(model_version)s
+                AND as_of_at IS NOT NULL AND renewal_due_at IS NOT NULL
+                AND renewal_price_usd IS NOT NULL
+            ),
+            ref AS (SELECT COALESCE(%(as_of)s::timestamptz, MAX(predicted_at)) AS t FROM valid)
+            SELECT DISTINCT ON (v.user_id) v.prediction_id, v.app_id, v.user_id, v.model_id,
+                   v.model_version, v.prediction_source, v.plan_type, v.predicted_at, v.as_of_at,
+                   v.renewal_due_at, v.churn_probability, v.renewal_price_usd, ref.t
+            FROM valid v CROSS JOIN ref
+            WHERE v.as_of_at <= ref.t AND v.predicted_at <= ref.t
+            ORDER BY v.user_id, v.as_of_at DESC, v.predicted_at DESC, v.prediction_id DESC
+        """, params)
+        rows = cur.fetchall()
+
+    reference = as_of if as_of is not None else (rows[0][-1] if rows else None)
+    if reference is not None:
+        reference = reference.astimezone(timezone.utc)
+    counts = {"subscribers_with_predictions": len(rows), "renewal_already_due": 0,
+              "stale": 0, "missing_plan_type": 0}
+    kept = []
+    for pid, app_, uid, mid, version, source, plan, predicted, cutoff, due, p, price, _ in rows:
+        predicted, cutoff, due = (ts.astimezone(timezone.utc) for ts in (predicted, cutoff, due))
+        if due <= reference:
+            counts["renewal_already_due"] += 1
+            continue
+        if (reference - cutoff).total_seconds() > max_age_days * 86400:
+            counts["stale"] += 1
+            continue
+        if plan is None:
+            counts["missing_plan_type"] += 1
+            continue
+        kept.append({"prediction_id": pid, "app_id": app_, "user_id": uid,
+                     "model_id": mid, "model_version": version, "prediction_source": source,
+                     "plan_type": plan, "predicted_at": predicted.isoformat(),
+                     "as_of_at": cutoff.isoformat(), "renewal_due_at": due.isoformat(),
+                     "churn_probability": float(p), "renewal_price_usd": float(price)})
+    kept.sort(key=lambda row: (-row["churn_probability"] * row["renewal_price_usd"], row["user_id"]))
+    counts["eligible"] = len(kept)
+    counts["returned"] = min(len(kept), limit)
+    return {"model_id": model_id, "model_version": model_version, "app_id": app_id,
+            "reference_time": reference.isoformat() if reference else None,
+            "max_age_days": max_age_days, "counts": counts, "subscribers": kept[:limit]}
