@@ -78,8 +78,36 @@ def test_four_dashboards_are_read_only_and_source_honest():
                 assert sql.startswith("SELECT ")
                 assert not any(word in sql for word in ("INSERT INTO", "UPDATE ", "DELETE FROM"))
                 assert "USER_ID AS" not in sql
-    assert "No external churn model loaded" in files_content(files)
+    model_dashboard = next(dashboard for dashboard in dashboards if dashboard["uid"] == "model-health")
+    model_panel = next(panel for panel in model_dashboard["panels"] if panel["title"] == "Stored prediction sources")
+    assert "churn_predictions" in model_panel["targets"][0]["rawSql"]
+    assert "No external churn model loaded" not in files_content(files)
     assert "Need verified variant assignment" in files_content(files)
+
+
+def test_model_inventory_shows_mock_external_and_empty_external_state():
+    import sqlite3
+
+    dashboard = json.loads((ROOT / "grafana/dashboards/model-health.json").read_text())
+    panel = next(panel for panel in dashboard["panels"] if panel["title"] == "Stored prediction sources")
+    sql = panel["targets"][0]["rawSql"]
+    assert "service is running" in panel["description"]
+    with sqlite3.connect(":memory:") as db:
+        db.execute("CREATE TABLE churn_predictions (prediction_source TEXT, model_id TEXT, model_version TEXT)")
+        assert db.execute(sql).fetchall() == [("external", "No external predictions stored", None, 0)]
+        db.execute("INSERT INTO churn_predictions VALUES ('mock', 'mock-churn-v1', '0.0.0-mock')")
+        assert db.execute(sql).fetchall() == [
+            ("external", "No external predictions stored", None, 0),
+            ("mock", "mock-churn-v1", "0.0.0-mock", 1),
+        ]
+        db.executemany("INSERT INTO churn_predictions VALUES (?, ?, ?)", [
+            ("mock", "mock-churn-v1", "0.0.0-mock"),
+            ("external", "lumen-temporal-catboost", "1.0.0"),
+        ])
+        assert db.execute(sql).fetchall() == [
+            ("external", "lumen-temporal-catboost", "1.0.0", 1),
+            ("mock", "mock-churn-v1", "0.0.0-mock", 2),
+        ]
 
 
 def files_content(files):
