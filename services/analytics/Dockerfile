@@ -5,5 +5,6 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 COPY shared /app/shared
 COPY services/__init__.py /app/services/__init__.py
 COPY services/analytics /app/services/analytics
+COPY postgres/init/003-temporal-predictions.sql /app/postgres/init/003-temporal-predictions.sql
 EXPOSE 8000
-CMD ["uvicorn", "services.analytics.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "python -m services.analytics.app.migrate && exec uvicorn services.analytics.app.main:app --host 0.0.0.0 --port 8000"]

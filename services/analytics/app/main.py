@@ -1,7 +1,9 @@
 """Persistence and aggregation. Does not model churn or treatment uplift."""
 import json
 import os
+
 from fastapi import FastAPI, HTTPException
+
 from shared.contracts.models import ActualObservation, ChurnPredictionResult, RetentionPlanResult
 
 app = FastAPI(title="Smart Retention Offers — Analytics Infrastructure", version="0.2.0")
@@ -40,7 +42,8 @@ def ingest_prediction(prediction: ChurnPredictionResult):
             # A separate statement sees a concurrent insert after ON CONFLICT has waited for it.
             cur.execute("""
                 SELECT request_id, app_id, user_id, model_id, model_version,
-                       prediction_source, renewal_horizon_days, churn_probability
+                       prediction_source, renewal_horizon_days, churn_probability,
+                       as_of_at, renewal_due_at, renewal_price_usd
                 FROM churn_predictions WHERE prediction_id = %s
             """, (prediction.prediction_id,))
             stored = cur.fetchone()
@@ -49,7 +52,9 @@ def ingest_prediction(prediction: ChurnPredictionResult):
                 prediction.model_id, prediction.model_version, prediction.prediction_source,
                 prediction.renewal_horizon_days, prediction.churn_probability,
             )
-            if stored != stable_fields:
+            if stored is None or stored[:8] != stable_fields or stored[8:10] != (
+                prediction.as_of_at, prediction.renewal_due_at
+            ) or (float(stored[10]) if stored[10] is not None else None) != prediction.renewal_price_usd:
                 raise HTTPException(status_code=409, detail="prediction_id already exists with different content")
     return {"status": "stored" if inserted else "duplicate", "prediction_id": prediction.prediction_id}
 
