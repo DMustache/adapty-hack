@@ -68,6 +68,12 @@ def main():
     defaults = {variable["name"]: variable["current"]["value"] for variable in variables}
     assert set(defaults) == {f"{group}_{name}" for group in "ab" for name in FIELDS}
     assert set(defaults.values()) == {"__all__"}
+    # Grafana inserts a custom includeAll value without :sqlstring escaping.
+    # All must be a regular query result so it is quoted like specific values.
+    assert all(variable["includeAll"] is False for variable in variables)
+    assert all("allValue" not in variable for variable in variables)
+    assert all("'All'::text AS __text, '__all__'::text AS __value" in variable["query"]
+               for variable in variables)
     test_queries = [v["query"] for v in variables if v["name"].endswith("_test")]
     assert len(test_queries) == 2 and all("__no_test__" in q for q in test_queries)
     panels = {panel["id"]: panel for panel in DASHBOARD["panels"]}
@@ -86,6 +92,7 @@ def main():
         "no_test": {"a_test": "__no_test__", "b_platform": "Android"},
         "empty": {"a_country": "ZZ", "b_platform": "Android"},
         "overlap": {"a_platform": "iOS", "b_country": "US"},
+        "flows_with_other_filters_all": {"a_flow": "onb_trial", "b_flow": "onb_weekly"},
     }
     for label, changes in scenarios.items():
         values = defaults | changes
