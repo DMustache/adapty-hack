@@ -11,6 +11,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import sys
@@ -38,13 +39,18 @@ def build_requests(snaps: pd.DataFrame, subscribers: int, days: int) -> list[dic
     for r in rows.itertuples(index=False):
         rec = r._asdict()
         days_left = (r.renewal_due_at - r.as_of_at).total_seconds() / 86400
+        if days_left <= 0 or r.plan not in ("weekly", "monthly"):
+            continue
+        # These are synthetic offline IDs. Keep their original values out of service and dashboard records.
+        pseudonym = hashlib.sha256(f"lumen-synthetic:{r.user_id}".encode()).hexdigest()[:24]
+        cutoff = r.as_of_at.isoformat().replace("+00:00", "Z")
+        due = r.renewal_due_at.isoformat().replace("+00:00", "Z")
         out.append({
-            "request_id": f"temporal-{r.user_id}-{r.as_of_at:%Y%m%dT%H%M%S}",
-            "app_id": APP_ID, "user_id": r.user_id, "model_id": MODEL_ID,
+            "request_id": f"temporal-{pseudonym}-{r.as_of_at:%Y%m%dT%H%M%S}",
+            "app_id": APP_ID, "user_id": pseudonym, "model_id": MODEL_ID,
             "renewal_horizon_days": max(1, min(365, math.ceil(days_left))),
-            "as_of_at": r.as_of_at.isoformat(), "renewal_due_at": r.renewal_due_at.isoformat(),
-            "renewal_price_usd": float(r.renewal_price_usd),
-            "context": {"platform": rec["platform"], "plan": rec["plan"]},
+            "context": {"as_of_at": cutoff, "renewal_due_at": due,
+                        "feature_source_ref": "synthetic-offline-replay"},
             "features": S.feature_record(rec, "temporal"),
         })
     return out
