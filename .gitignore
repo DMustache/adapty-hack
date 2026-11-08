@@ -13,3 +13,7 @@ __pycache__/
 # Local onboarding prompts for this checkout.
 /START_HERE.md
 /LEAD_START_PROMPT.md
+
+# Local data clone and IDE files (from the Discount Advisor branch).
+adapty-seed-data-hack
+.idea
