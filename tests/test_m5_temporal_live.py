@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import urllib.request
+import urllib.error
 from pathlib import Path
 from uuid import uuid4
 
@@ -81,3 +82,55 @@ def test_existing_volume_migration_reruns_and_trajectory_is_read_only():
         assert rights == "t|f"
     finally:
         psql(f"DROP SCHEMA IF EXISTS {schema} CASCADE;")
+
+
+def test_simulated_assignment_exposure_and_mature_outcome_lineage():
+    run = uuid4().hex
+    fixture = json.loads((ROOT / "tests/fixtures/temporal_churn_fixture.json").read_text())
+    case = fixture["cases"][0]
+    prediction = http("POST", INF + "/v1/predict", {
+        "request_id": f"lineage-{run}", "app_id": "lumen-demo", "user_id": f"synthetic-{run}",
+        "model_id": fixture["model_id"], "renewal_horizon_days": 7,
+        "context": {"as_of_at": case["as_of_at"], "renewal_due_at": case["renewal_due_at"]},
+        "features": case["features"],
+    })
+    examples = ROOT / "contracts/examples"
+    records = [json.loads((examples / (kind + ".json")).read_text()) for kind in
+               ("actual-assignment", "actual-exposure", "next-renewal-outcome")]
+    for record in records:
+        record.update(app_id="lumen-demo", user_id=f"synthetic-{run}",
+                      prediction_id=prediction["prediction_id"], model_id=prediction["model_id"],
+                      model_version=prediction["model_version"], as_of_at="2026-07-08T09:34:54Z",
+                      renewal_due_at="2026-07-15T09:34:54Z", experiment_id=f"demo-{run}",
+                      variation_id="treatment", assignment_id=f"assignment-{run}",
+                      idempotency_key=f"{record['idempotency_key']}-{run}",
+                      source_event_id=f"{record['source_event_id']}-{run}")
+    assignment, exposure, outcome = records
+    assignment.update(event_at="2026-07-08T10:00:00Z", ingested_at="2026-07-08T10:00:01Z")
+    exposure.update(event_at="2026-07-09T10:00:00Z", ingested_at="2026-07-09T10:00:01Z",
+                    exposure_id=f"exposure-{run}")
+    outcome.update(event_at="2026-07-17T10:00:00Z", ingested_at="2026-07-17T10:00:01Z",
+                   outcome_mature_at="2026-07-16T10:00:00Z", outcome_id=f"outcome-{run}",
+                   exposure_id=exposure["exposure_id"])
+    def post(kind, record):
+        return http("POST", ANA + "/v1/ingest/lineage/" + kind, record)
+    assert post("actual-assignment", assignment)["status"] == "stored"
+    assert post("actual-assignment", assignment)["status"] == "duplicate"
+    with pytest.raises(urllib.error.HTTPError) as changed:
+        post("actual-assignment", {**assignment, "variation_id": "control"})
+    assert changed.value.code == 409
+    before = http("GET", ANA + f"/v1/lineage/demo-{run}?app_id=lumen-demo")
+    assert [row["kind"] for row in before["events"]] == ["actual-assignment"]
+    assert post("actual-exposure", exposure)["status"] == "stored"
+    with pytest.raises(urllib.error.HTTPError) as premature:
+        post("next-renewal-outcome", {**outcome, "event_at": "2026-07-15T10:00:00Z"})
+    assert premature.value.code == 422
+    assert post("next-renewal-outcome", outcome)["status"] == "stored"
+    assert post("next-renewal-outcome", outcome)["status"] == "duplicate"
+    joined = http("GET", ANA + f"/v1/lineage/demo-{run}?app_id=lumen-demo")
+    assert {row["kind"] for row in joined["events"]} == {
+        "actual-assignment", "actual-exposure", "next-renewal-outcome"}
+    assert all(row["source"] == "simulated" for row in joined["events"])
+    rights = psql("SELECT has_table_privilege('grafana_ro', 'public.experiment_lineage', 'SELECT'), "
+                  "has_table_privilege('grafana_ro', 'public.experiment_lineage', 'INSERT');")
+    assert rights == "t|f"
