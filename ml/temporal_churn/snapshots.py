@@ -69,6 +69,14 @@ ROUND2_CATEGORICAL = ["ab_test", "first_offer", "locale"]
 ROUND2_FEATURES = [f for g in ROUND2_GROUPS.values() for f in g]
 COHORT_PRIOR_WEIGHT = 20
 
+# Revenue-to-date candidates (ablation_revenue.py): point-in-time equivalent of Adapty's profile total_revenue_usd,
+# which is a current value and would leak payments made after the snapshot.
+REVENUE_GROUPS = {
+    "cumulative_net_revenue": ["cumulative_net_revenue_usd"],
+    "revenue_per_subscribed_day": ["revenue_per_subscribed_day"],
+}
+REVENUE_FEATURES = [f for g in REVENUE_GROUPS.values() for f in g]
+
 FEATURE_SETS = {
     # attributes known at sign-up only: one value per subscription period, whatever the date
     "static": STATIC_CATEGORICAL + STATIC_NUMERIC + STATIC_BOOLEAN,
@@ -83,6 +91,8 @@ FEATURE_SETS = {
 FEATURE_SETS["temporal_extended"] = FEATURE_SETS["temporal"] + HISTORY_FEATURES
 # round-2 candidate set (ablation_round2.py); not deployed unless a group passes the ablation rule
 FEATURE_SETS["temporal_round2"] = FEATURE_SETS["temporal"] + ROUND2_FEATURES
+# revenue-to-date candidate set (ablation_revenue.py); not deployed unless a group passes the ablation rule
+FEATURE_SETS["temporal_revenue"] = FEATURE_SETS["temporal"] + REVENUE_FEATURES
 EVALUATED_MODELS = ("static", "temporal_behaviour", "temporal")   # trained/compared by train.py and ablation.py
 CATEGORICAL = set(STATIC_CATEGORICAL + ROUND2_CATEGORICAL)
 BOOLEAN = set(STATIC_BOOLEAN + STATUS_BOOLEAN + HISTORY_BOOLEAN)
@@ -187,11 +197,33 @@ def build_snapshots(users: pd.DataFrame, tx: pd.DataFrame, cutoff: pd.Timestamp,
     s = s.reset_index(drop=True)
     _add_history_features(s, users, tx)
     _add_round2_features(s, users, tx, off)
+    _add_revenue_features(s, tx)
     resolved = s["renewal_due_at"] <= cutoff - pd.Timedelta(days=OUTCOME_MARGIN_DAYS)
     s["churn"] = np.where(resolved, (~s["renewed"]).astype(float), np.nan)
     keep = ["user_id", "seq", "as_of_at", "renewal_due_at", "churn"] + FEATURE_SETS["temporal_extended"] \
-        + ROUND2_FEATURES
+        + ROUND2_FEATURES + REVENUE_FEATURES
     return s[keep].sort_values(["as_of_at", "user_id"]).reset_index(drop=True)
+
+
+def _sum_up_to(s: pd.DataFrame, events: pd.DataFrame) -> pd.Series:
+    """For each snapshot row: sum of the subscriber's event amounts with t <= as_of_at."""
+    if events.empty:
+        return pd.Series(0.0, index=s.index)
+    snap = s[["user_id", "as_of_at"]].reset_index().rename(columns={"index": "row"})
+    m = snap.merge(events[["user_id", "t", "amount"]], on="user_id")
+    m = m[m["t"] <= m["as_of_at"]]
+    return m.groupby("row")["amount"].sum().reindex(s.index, fill_value=0.0).astype(float)
+
+
+def _add_revenue_features(s: pd.DataFrame, tx: pd.DataFrame) -> None:
+    """Net revenue received up to as_of_at: paid receipts dated <= as_of_at minus those refunded <= as_of_at
+    (all products, USD). Point-in-time replacement for Adapty's current total_revenue_usd."""
+    paid = tx.loc[tx["price_usd"] > 0, ["user_id", "purchased_at", "refunded_at", "price_usd"]]
+    payments = paid.rename(columns={"purchased_at": "t", "price_usd": "amount"})[["user_id", "t", "amount"]]
+    refunds = paid[paid["refunded_at"].notna()].assign(amount=lambda d: -d["price_usd"]) \
+        .rename(columns={"refunded_at": "t"})[["user_id", "t", "amount"]]
+    s["cumulative_net_revenue_usd"] = _sum_up_to(s, pd.concat([payments, refunds], ignore_index=True))
+    s["revenue_per_subscribed_day"] = s["cumulative_net_revenue_usd"] / np.maximum(s["tenure_days"], 1.0)
 
 
 def _add_round2_features(s: pd.DataFrame, users: pd.DataFrame, tx: pd.DataFrame, off: pd.Series) -> None:

@@ -43,7 +43,9 @@ def ranking(y, p, price, groups, rng) -> dict:
             "rev_capture_10": revenue_capture(y, p, price, 0.10), "rev_capture_20": revenue_capture(y, p, price, 0.20)}
 
 
-def main(data_dir=None) -> dict:
+def main(data_dir=None, candidate_groups=None, stem="ablation_round2", title="Round-2 candidate features") -> dict:
+    candidate_groups = candidate_groups or S.ROUND2_GROUPS
+    all_feats = [f for g in candidate_groups.values() for f in g]
     rng = np.random.default_rng(SEED)
     params_all = {n: r["params"] for n, r in json.loads((REPORT_DIR / "evaluation.json").read_text())["models"].items()}
     params = params_all["temporal"]
@@ -65,7 +67,7 @@ def main(data_dir=None) -> dict:
     preds = {"temporal (deployed)": p_base}
     ablation = {"base": {"fold_brier": base_folds, "test_brier": float(brier_score_loss(y, p_base)),
                          "test_pr_auc": float(average_precision_score(y, p_base))}}
-    candidates = {**S.ROUND2_GROUPS, "all_round2_features": S.ROUND2_FEATURES}
+    candidates = {**candidate_groups, ("all_round2_features" if stem == "ablation_round2" else "all_together"): all_feats}
     for name, feats in candidates.items():
         folds_b, p = evaluate(base + feats)
         preds[f"temporal + {name}"] = p
@@ -81,21 +83,22 @@ def main(data_dir=None) -> dict:
 
     on = ~test["auto_renew_off"].to_numpy().astype(bool)
     tr_on = train[~train["auto_renew_off"].astype(bool)]
-    f_on = S.FEATURE_SETS["temporal_round2"]
-    preds["trained on auto-renew-ON only, all round-2 features"] = np.full(len(test), np.nan)
-    preds["trained on auto-renew-ON only, all round-2 features"][on] = predict(fit(tr_on, f_on, params), test[on], f_on)
+    f_on = base + all_feats
+    on_name = "trained on auto-renew-ON only, all " + ("round-2" if stem == "ablation_round2" else "candidate") + " features"
+    preds[on_name] = np.full(len(test), np.nan)
+    preds[on_name][on] = predict(fit(tr_on, f_on, params), test[on], f_on)
     price = test["renewal_price_usd"].to_numpy(float)
     on_report = {n: ranking(y[on], p[on], price[on], groups[on], rng) for n, p in preds.items()}
-    out = {"ablation": ablation, "auto_renew_on": on_report,
+    out = {"title": title, "ablation": ablation, "auto_renew_on": on_report,
            "already_in_deployed_model": ["placement", "flow", "acquisition_channel", "app_version"]}
-    (REPORT_DIR / "ablation_round2.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
-    (REPORT_DIR / "ablation_round2.md").write_text(render(out), encoding="utf-8")
+    (REPORT_DIR / f"{stem}.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+    (REPORT_DIR / f"{stem}.md").write_text(render(out), encoding="utf-8")
     return out
 
 
 def render(o: dict) -> str:
     a, b = o["ablation"], o["ablation"]["base"]
-    L = ["# Round-2 candidate features: ablation", "",
+    L = [f"# {o.get('title', 'Round-2 candidate features')}: ablation", "",
          "Each group is added to the deployed temporal model (same hyperparameters, snapshots, holdout). Helps = lower "
          "Brier in every chronological CV fold AND holdout gain with 95% CI above 0. `cancellation_reason` is never "
          "used. Already in the deployed model, so not re-added: " + ", ".join(o["already_in_deployed_model"]) + ".", "",

@@ -95,7 +95,7 @@ def test_future_events_do_not_change_past_features():
     tx2.loc[tx2.user_id == "a", "renew_status_changed_at"] = T + 20 * DAY
     tx2.loc[tx2.user_id == "a", "billing_issue_detected_at"] = T + 25 * DAY
     alt = S.build_snapshots(users, tx2, cutoff=T + 60 * DAY)
-    feats = S.FEATURE_SETS["temporal_extended"] + S.ROUND2_FEATURES
+    feats = S.FEATURE_SETS["temporal_extended"] + S.ROUND2_FEATURES + S.REVENUE_FEATURES
     a = base[base.as_of_at <= pivot].set_index(["user_id", "as_of_at"])[feats]
     b = alt[alt.as_of_at <= pivot].set_index(["user_id", "as_of_at"])[feats]
     pd.testing.assert_frame_equal(a.sort_index(), b.sort_index())
@@ -163,7 +163,7 @@ def test_cancellation_reason_is_never_used():
     users, tx = _frames(_tx("a", 3, renew_status=False), _tx("b", 2))
     tx_a = tx.assign(cancellation_reason=None)
     tx_b = tx.assign(cancellation_reason="voluntarily_cancelled")
-    feats = S.FEATURE_SETS["temporal_extended"] + S.ROUND2_FEATURES
+    feats = S.FEATURE_SETS["temporal_extended"] + S.ROUND2_FEATURES + S.REVENUE_FEATURES
     pd.testing.assert_frame_equal(S.build_snapshots(users, tx_a, T + 60 * DAY)[feats],
                                   S.build_snapshots(users, tx_b, T + 60 * DAY)[feats])
 
@@ -196,6 +196,19 @@ def test_install_and_first_purchase_features():
     assert (s["days_install_to_first_purchase"] == 2.0).all()
     assert (s["install_hour_utc"] == 0).all() and (s["install_weekday_utc"] == (T - 2 * DAY).day_of_week).all()
     assert (s["ab_test"] == "none").all() and (s["first_offer"] == "none").all() and (s["locale"] == "en_US").all()
+
+
+def test_cumulative_net_revenue_is_point_in_time():
+    chain = [_receipt("a", 0, "weekly", 0, 7, 6.99, refunded_at=T + 6.5 * DAY),   # refunded late in week 1
+             _receipt("a", 1, "weekly", 7, 7, 6.99), _receipt("a", 2, "weekly", 14, 7, 6.99)]
+    users, tx = _frames(chain)
+    s = S.build_snapshots(users, tx, cutoff=T + 60 * DAY).set_index("as_of_at")
+    assert s.loc[T + 1 * DAY, "cumulative_net_revenue_usd"] == pytest.approx(6.99)       # before the refund
+    assert s.loc[T + 8 * DAY, "cumulative_net_revenue_usd"] == pytest.approx(6.99)       # 2 payments - 1 refund
+    assert s.loc[T + 15 * DAY, "cumulative_net_revenue_usd"] == pytest.approx(13.98)     # 3 payments - 1 refund
+    # per subscribed day: tenure counts from the first paid receipt, floored at 1 day
+    assert s.loc[T, "revenue_per_subscribed_day"] == pytest.approx(6.99)
+    assert s.loc[T + 15 * DAY, "revenue_per_subscribed_day"] == pytest.approx(13.98 / 15)
 
 
 def test_feature_record_is_json_ready():

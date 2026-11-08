@@ -137,6 +137,50 @@ still on as the renewal approaches means lower risk**, which a model mixing ON a
 model is also worse than a constant on Brier for ON users. Every individual round-2 candidate, the all-features
 variant and an ON-only model land at the same 0.64. Full table: `ml/temporal_churn/reports/ablation_round2.md`.
 
+**Revenue to date** (`python -m ml.temporal_churn.ablation_revenue`, candidate set `temporal_revenue`).
+Point-in-time replacement for Adapty's profile `total_revenue_usd`, which is a current value and would leak later
+payments. Computed from transactions dated ≤ `as_of_at`: payments minus refunds.
+
+| Group | CV folds improved | Holdout Brier gain (95% CI) | Helps |
+|---|---|---|---|
+| Cumulative net revenue (in this data exactly (renewals + 1) × price) | 0/3 | −0.00004 (−0.00007 to +0.00001) | no |
+| Revenue per subscribed day | 0/3 | +0.00001 (−0.00003 to +0.00004) | no |
+| Both | 0/3 | −0.00002 (−0.00006 to +0.00003) | no |
+
+Among auto-renew-ON subscribers these variants rank like the deployed model (ROC-AUC 0.637–0.638 vs 0.640).
+
+### Predicted vs actual churn rate, and recalibration
+
+The model predicts a probability per subscriber. A group's churn rate is the mean probability, expected churners the
+sum, revenue at risk the sum of probability × renewal price. The rate is **per renewal** (per week for weekly plans).
+
+On the holdout the deployed model predicts a mean **11.7%** against **10.1%** actual. Ranking and the top-risk decile
+are accurate (0.439 predicted vs 0.436 observed); the level is about 1.6 points high.
+
+**Recalibration attempt** (`python -m ml.temporal_churn.recalibrate`), design fixed before results:
+- **Window:** 14 Sep – 4 Oct, the 21 days before the holdout, with renewals resolved before the holdout; 17,146
+  snapshots.
+- **Predictions for the window:** out-of-time, from a copy of the model trained only on renewals resolved before the
+  window.
+- **Method:** Platt, logit(p′) = a + b·logit(p).
+- **Deploy rule:** only if it beats the uncorrected model on Brier, ECE **and** the overall rate on the holdout.
+
+| On the holdout (actual 10.1%) | Mean predicted | Brier | ECE | ROC-AUC |
+|---|---|---|---|---|
+| Before (deployed v1.0.0) | 11.7% | **0.0601** | 0.0159 | 0.767 |
+| After: Platt (pre-declared) | 11.2% | 0.0604 | 0.0167 | 0.767 |
+| Sensitivity only: intercept shift | 11.2% | 0.0600 | 0.0120 | 0.767 |
+| Sensitivity only: isotonic | 11.0% | 0.0608 | 0.0189 | 0.766 |
+
+**Verdict: not deployed.** Platt moved the level 0.5 points closer but made the probabilities worse (Brier, ECE).
+Churn kept drifting: the calibration window itself had 12.1% churn, the holdout 10.1%. A correction fitted on the most
+recent past learns that window's level and cannot anticipate a further drop. The intercept-only variant scored best,
+but choosing it now would be tuning on the holdout.
+
+In production, the right tool is **monitoring**: compare predicted and realized rates as renewals resolve, and refit
+the calibration on a rolling recent window. Only switch it on once it beats the uncorrected model on data it was not
+fitted on. `recalibrate.py --deploy` writes a calibration file only when that check passes.
+
 **Reading the results honestly:**
 - The time-aware gain comes almost entirely from **auto-renew status over time**: seeing that a subscriber has switched
   it off, and since when.

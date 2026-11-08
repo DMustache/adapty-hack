@@ -1,0 +1,188 @@
+{
+ "title": "Revenue-to-date candidate features",
+ "ablation": {
+  "base": {
+   "fold_brier": [
+    0.06646758800098003,
+    0.06632211309570124,
+    0.06790821459392732
+   ],
+   "test_brier": 0.060107658707638865,
+   "test_pr_auc": 0.5178365488859857
+  },
+  "cumulative_net_revenue": {
+   "features": [
+    "cumulative_net_revenue_usd"
+   ],
+   "varying_in_data": [
+    "cumulative_net_revenue_usd"
+   ],
+   "fold_brier": [
+    0.06652822700794289,
+    0.06652598983490075,
+    0.06793751895885834
+   ],
+   "folds_improved": "0/3",
+   "test_brier": 0.060143326337842896,
+   "test_brier_gain": -3.5667630204024696e-05,
+   "ci95": [
+    -7.42977972961868e-05,
+    9.536685921393065e-06
+   ],
+   "test_pr_auc": 0.5177976683128722,
+   "helps": false
+  },
+  "revenue_per_subscribed_day": {
+   "features": [
+    "revenue_per_subscribed_day"
+   ],
+   "varying_in_data": [
+    "revenue_per_subscribed_day"
+   ],
+   "fold_brier": [
+    0.0665462960320433,
+    0.06639113181437022,
+    0.06794834039774307
+   ],
+   "folds_improved": "0/3",
+   "test_brier": 0.060100313460425284,
+   "test_brier_gain": 7.345247213577479e-06,
+   "ci95": [
+    -2.8093553346669924e-05,
+    3.9871586634415055e-05
+   ],
+   "test_pr_auc": 0.5184278171693153,
+   "helps": false
+  },
+  "all_together": {
+   "features": [
+    "cumulative_net_revenue_usd",
+    "revenue_per_subscribed_day"
+   ],
+   "varying_in_data": [
+    "cumulative_net_revenue_usd",
+    "revenue_per_subscribed_day"
+   ],
+   "fold_brier": [
+    0.06656497655691382,
+    0.06650549420347283,
+    0.06794688890019612
+   ],
+   "folds_improved": "0/3",
+   "test_brier": 0.06012701645410117,
+   "test_brier_gain": -1.9357746462318276e-05,
+   "ci95": [
+    -6.101862778699546e-05,
+    2.679046420128523e-05
+   ],
+   "test_pr_auc": 0.5176820135001915,
+   "helps": false
+  }
+ },
+ "auto_renew_on": {
+  "temporal (deployed)": {
+   "n": 27024,
+   "churn_rate": 0.06753256364712848,
+   "roc_auc": 0.6397012927779804,
+   "roc_auc_ci95": [
+    0.6233303553633575,
+    0.6598045171984745
+   ],
+   "pr_auc": 0.10262926702902908,
+   "brier": 0.06231801975343819,
+   "brier_constant": 0.06297191649437504,
+   "rev_capture_10": 0.1846864829792345,
+   "rev_capture_20": 0.35746556822368714
+  },
+  "temporal + cumulative_net_revenue": {
+   "n": 27024,
+   "churn_rate": 0.06753256364712848,
+   "roc_auc": 0.6378984706394633,
+   "roc_auc_ci95": [
+    0.6188577402311422,
+    0.6558230117701949
+   ],
+   "pr_auc": 0.10239551642657649,
+   "brier": 0.06235467692432402,
+   "brier_constant": 0.06297191649437504,
+   "rev_capture_10": 0.18181841496285192,
+   "rev_capture_20": 0.3581178292956692
+  },
+  "temporal + revenue_per_subscribed_day": {
+   "n": 27024,
+   "churn_rate": 0.06753256364712848,
+   "roc_auc": 0.6384805441833689,
+   "roc_auc_ci95": [
+    0.6186879453540456,
+    0.6590610721384192
+   ],
+   "pr_auc": 0.10313498097694122,
+   "brier": 0.062309984741937496,
+   "brier_constant": 0.06297191649437504,
+   "rev_capture_10": 0.18894883383756048,
+   "rev_capture_20": 0.3521825099997692
+  },
+  "temporal + all_together": {
+   "n": 27024,
+   "churn_rate": 0.06753256364712848,
+   "roc_auc": 0.637110300637066,
+   "roc_auc_ci95": [
+    0.6188415715272579,
+    0.6551685334950832
+   ],
+   "pr_auc": 0.10238575350877221,
+   "brier": 0.062338447268822546,
+   "brier_constant": 0.06297191649437504,
+   "rev_capture_10": 0.1851643518379999,
+   "rev_capture_20": 0.34879639452647815
+  },
+  "static": {
+   "n": 27024,
+   "churn_rate": 0.06753256364712848,
+   "roc_auc": 0.5453834708596286,
+   "roc_auc_ci95": [
+    0.5134830986494272,
+    0.5748722812539121
+   ],
+   "pr_auc": 0.07786320339568079,
+   "brier": 0.06683955644378355,
+   "brier_constant": 0.06297191649437504,
+   "rev_capture_10": 0.10839672860724736,
+   "rev_capture_20": 0.24284543122321603
+  },
+  "temporal_behaviour": {
+   "n": 27024,
+   "churn_rate": 0.06753256364712848,
+   "roc_auc": 0.5675539636004255,
+   "roc_auc_ci95": [
+    0.539193478336314,
+    0.5962792575797533
+   ],
+   "pr_auc": 0.08319249653979888,
+   "brier": 0.06586847520955826,
+   "brier_constant": 0.06297191649437504,
+   "rev_capture_10": 0.15421400831098578,
+   "rev_capture_20": 0.24546216928525696
+  },
+  "trained on auto-renew-ON only, all candidate features": {
+   "n": 27024,
+   "churn_rate": 0.06753256364712848,
+   "roc_auc": 0.6368419055550694,
+   "roc_auc_ci95": [
+    0.6165603823151037,
+    0.6557060979937563
+   ],
+   "pr_auc": 0.10293781484025205,
+   "brier": 0.06233154492792654,
+   "brier_constant": 0.06297191649437504,
+   "rev_capture_10": 0.18643895374930436,
+   "rev_capture_20": 0.3507232575097647
+  }
+ },
+ "already_in_deployed_model": [
+  "placement",
+  "flow",
+  "acquisition_channel",
+  "app_version"
+ ]
+}

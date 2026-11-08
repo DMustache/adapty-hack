@@ -1,0 +1,654 @@
+{
+ "calibration_window": {
+  "from": "2026-09-14T00:07:04+00:00",
+  "to": "2026-10-05T00:07:04+00:00",
+  "snapshots": 17146,
+  "actual_churn": 0.12131109296628952,
+  "out_of_time_mean_predicted": 0.12768650883849547,
+  "early_model_rows": 37792
+ },
+ "platt": {
+  "a": 2.272457983072128,
+  "b": 2.0321776100818574
+ },
+ "intercept_shift": -0.05850189832344177,
+ "holdout": {
+  "before (deployed v1.0.0)": {
+   "mean_predicted": 0.11662450458923082,
+   "actual": 0.10067808708065668,
+   "brier": 0.060107658707638865,
+   "log_loss": 0.23367307746007585,
+   "ece": 0.01594641750857416,
+   "calib_slope": 1.3811558448494332,
+   "calib_intercept": 0.6335014604267453,
+   "roc_auc": 0.7669106201062794,
+   "pr_auc": 0.5178365488859857,
+   "calibration": [
+    {
+     "bin": 1,
+     "n": 2802,
+     "mean_predicted": 0.044677191094647815,
+     "observed": 0.027123483226266953
+    },
+    {
+     "bin": 2,
+     "n": 2802,
+     "mean_predicted": 0.05204742081249718,
+     "observed": 0.03140613847251963
+    },
+    {
+     "bin": 3,
+     "n": 2802,
+     "mean_predicted": 0.0578783754703266,
+     "observed": 0.04068522483940043
+    },
+    {
+     "bin": 4,
+     "n": 2802,
+     "mean_predicted": 0.06615572092970322,
+     "observed": 0.04925053533190578
+    },
+    {
+     "bin": 5,
+     "n": 2802,
+     "mean_predicted": 0.07931170962047977,
+     "observed": 0.06245538900785153
+    },
+    {
+     "bin": 6,
+     "n": 2802,
+     "mean_predicted": 0.09132841145805733,
+     "observed": 0.0667380442541042
+    },
+    {
+     "bin": 7,
+     "n": 2802,
+     "mean_predicted": 0.10260056555281992,
+     "observed": 0.09100642398286937
+    },
+    {
+     "bin": 8,
+     "n": 2802,
+     "mean_predicted": 0.11156520739634113,
+     "observed": 0.099214846538187
+    },
+    {
+     "bin": 9,
+     "n": 2802,
+     "mean_predicted": 0.12135895570268222,
+     "observed": 0.10278372591006424
+    },
+    {
+     "bin": 10,
+     "n": 2802,
+     "mean_predicted": 0.4393214878547531,
+     "observed": 0.43611705924339755
+    }
+   ]
+  },
+  "after: Platt": {
+   "mean_predicted": 0.11182512698586218,
+   "actual": 0.10067808708065668,
+   "brier": 0.06037289113445073,
+   "log_loss": 0.23349861610094913,
+   "ece": 0.01674207639251539,
+   "calib_slope": 0.6813437173348349,
+   "calib_intercept": -0.9064602649860396,
+   "roc_auc": 0.7669106201062794,
+   "pr_auc": 0.5178365488859857,
+   "calibration": [
+    {
+     "bin": 1,
+     "n": 2802,
+     "mean_predicted": 0.01912658091349456,
+     "observed": 0.027123483226266953
+    },
+    {
+     "bin": 2,
+     "n": 2802,
+     "mean_predicted": 0.025976565825072937,
+     "observed": 0.03140613847251963
+    },
+    {
+     "bin": 3,
+     "n": 2802,
+     "mean_predicted": 0.032417179872529074,
+     "observed": 0.04068522483940043
+    },
+    {
+     "bin": 4,
+     "n": 2802,
+     "mean_predicted": 0.042969872822446874,
+     "observed": 0.04925053533190578
+    },
+    {
+     "bin": 5,
+     "n": 2802,
+     "mean_predicted": 0.0625375627318532,
+     "observed": 0.06245538900785153
+    },
+    {
+     "bin": 6,
+     "n": 2802,
+     "mean_predicted": 0.08358349521475783,
+     "observed": 0.0667380442541042
+    },
+    {
+     "bin": 7,
+     "n": 2802,
+     "mean_predicted": 0.10588191357905756,
+     "observed": 0.09100642398286937
+    },
+    {
+     "bin": 8,
+     "n": 2802,
+     "mean_predicted": 0.12526967277856346,
+     "observed": 0.099214846538187
+    },
+    {
+     "bin": 9,
+     "n": 2802,
+     "mean_predicted": 0.1480384312166332,
+     "observed": 0.10278372591006424
+    },
+    {
+     "bin": 10,
+     "n": 2802,
+     "mean_predicted": 0.4724499949042132,
+     "observed": 0.43611705924339755
+    }
+   ]
+  },
+  "sensitivity: intercept shift": {
+   "mean_predicted": 0.11239592488007667,
+   "actual": 0.10067808708065668,
+   "brier": 0.05999186463501755,
+   "log_loss": 0.23286484959443818,
+   "ece": 0.011971924763764838,
+   "calib_slope": 1.384634057132608,
+   "calib_intercept": 0.7228990133841084,
+   "roc_auc": 0.7669106201062794,
+   "pr_auc": 0.5178365488859857,
+   "calibration": [
+    {
+     "bin": 1,
+     "n": 2802,
+     "mean_predicted": 0.04224702526247181,
+     "observed": 0.027123483226266953
+    },
+    {
+     "bin": 2,
+     "n": 2802,
+     "mean_predicted": 0.0492356403204742,
+     "observed": 0.03140613847251963
+    },
+    {
+     "bin": 3,
+     "n": 2802,
+     "mean_predicted": 0.05476977165691299,
+     "observed": 0.04068522483940043
+    },
+    {
+     "bin": 4,
+     "n": 2802,
+     "mean_predicted": 0.06263278538336538,
+     "observed": 0.04925053533190578
+    },
+    {
+     "bin": 5,
+     "n": 2802,
+     "mean_predicted": 0.0751443508977923,
+     "observed": 0.06245538900785153
+    },
+    {
+     "bin": 6,
+     "n": 2802,
+     "mean_predicted": 0.08658896067823656,
+     "observed": 0.0667380442541042
+    },
+    {
+     "bin": 7,
+     "n": 2802,
+     "mean_predicted": 0.09733856325105,
+     "observed": 0.09100642398286937
+    },
+    {
+     "bin": 8,
+     "n": 2802,
+     "mean_predicted": 0.10589741320616297,
+     "observed": 0.099214846538187
+    },
+    {
+     "bin": 9,
+     "n": 2802,
+     "mean_predicted": 0.11525811372262713,
+     "observed": 0.10278372591006424
+    },
+    {
+     "bin": 10,
+     "n": 2802,
+     "mean_predicted": 0.4348466244216734,
+     "observed": 0.43611705924339755
+    }
+   ]
+  },
+  "sensitivity: isotonic": {
+   "mean_predicted": 0.1098460165685238,
+   "actual": 0.10067808708065668,
+   "brier": 0.060769439193312534,
+   "log_loss": 0.24168429286356286,
+   "ece": 0.018920144974353036,
+   "calib_slope": 0.45570163087507837,
+   "calib_intercept": -1.4139197896641418,
+   "roc_auc": 0.7656435419224266,
+   "pr_auc": 0.48856980034145703,
+   "calibration": [
+    {
+     "bin": 1,
+     "n": 2802,
+     "mean_predicted": 0.008540690849567944,
+     "observed": 0.027123483226266953
+    },
+    {
+     "bin": 2,
+     "n": 2802,
+     "mean_predicted": 0.02081020387900668,
+     "observed": 0.02926481084939329
+    },
+    {
+     "bin": 3,
+     "n": 2802,
+     "mean_predicted": 0.02844909183933487,
+     "observed": 0.04246966452533904
+    },
+    {
+     "bin": 4,
+     "n": 2802,
+     "mean_predicted": 0.0422612058069416,
+     "observed": 0.049964311206281226
+    },
+    {
+     "bin": 5,
+     "n": 2802,
+     "mean_predicted": 0.07055251686694222,
+     "observed": 0.061027837259100645
+    },
+    {
+     "bin": 6,
+     "n": 2802,
+     "mean_predicted": 0.08583493361205803,
+     "observed": 0.07351891506067094
+    },
+    {
+     "bin": 7,
+     "n": 2802,
+     "mean_predicted": 0.0920439618062002,
+     "observed": 0.08565310492505353
+    },
+    {
+     "bin": 8,
+     "n": 2802,
+     "mean_predicted": 0.13179869658007154,
+     "observed": 0.10171306209850108
+    },
+    {
+     "bin": 9,
+     "n": 2802,
+     "mean_predicted": 0.15315854575186078,
+     "observed": 0.10599571734475374
+    },
+    {
+     "bin": 10,
+     "n": 2802,
+     "mean_predicted": 0.4650103186932544,
+     "observed": 0.4300499643112063
+    }
+   ]
+  }
+ },
+ "by_group": {
+  "plan": [
+   {
+    "plan": "monthly",
+    "n": 3331,
+    "actual": 0.07355148604022815,
+    "before (deployed v1.0.0)": 0.08270572331555286,
+    "after: Platt": 0.058646253948720285,
+    "sensitivity: intercept shift": 0.08018324015407088,
+    "sensitivity: isotonic": 0.05072483152115602
+   },
+   {
+    "plan": "weekly",
+    "n": 24689,
+    "actual": 0.10433796427558832,
+    "before (deployed v1.0.0)": 0.12120077176986273,
+    "after: Platt": 0.11899993463650496,
+    "sensitivity: intercept shift": 0.11674200827034462,
+    "sensitivity: isotonic": 0.1178225513570038
+   }
+  ],
+  "days_bucket": [
+   {
+    "days_bucket": "(-0.001, 1.0]",
+    "n": 3906,
+    "actual": 0.09626216077828981,
+    "before (deployed v1.0.0)": 0.1196523228166796,
+    "after: Platt": 0.09605810924186343,
+    "sensitivity: intercept shift": 0.11698272257987304,
+    "sensitivity: isotonic": 0.090482880803016
+   },
+   {
+    "days_bucket": "(1.0, 2.0]",
+    "n": 3782,
+    "actual": 0.09941829719725014,
+    "before (deployed v1.0.0)": 0.11562196927762083,
+    "after: Platt": 0.09287795122550088,
+    "sensitivity: intercept shift": 0.11252382150082763,
+    "sensitivity: isotonic": 0.09100602460162759
+   },
+   {
+    "days_bucket": "(2.0, 3.0]",
+    "n": 4380,
+    "actual": 0.09680365296803653,
+    "before (deployed v1.0.0)": 0.115449516515628,
+    "after: Platt": 0.0981066332633751,
+    "sensitivity: intercept shift": 0.11185650436741487,
+    "sensitivity: isotonic": 0.10047558051622163
+   },
+   {
+    "days_bucket": "(3.0, 5.0]",
+    "n": 6949,
+    "actual": 0.1066340480644697,
+    "before (deployed v1.0.0)": 0.12380357303070265,
+    "after: Platt": 0.1253941878292629,
+    "sensitivity: intercept shift": 0.11879457917982578,
+    "sensitivity: isotonic": 0.12354187564221207
+   },
+   {
+    "days_bucket": "(5.0, 8.0]",
+    "n": 7035,
+    "actual": 0.10774697938877044,
+    "before (deployed v1.0.0)": 0.12037544462162879,
+    "after: Platt": 0.14273587517443928,
+    "sensitivity: intercept shift": 0.11463555741535479,
+    "sensitivity: isotonic": 0.14119407920564872
+   },
+   {
+    "days_bucket": "(8.0, 31.0]",
+    "n": 1968,
+    "actual": 0.0741869918699187,
+    "before (deployed v1.0.0)": 0.076398980497141,
+    "after: Platt": 0.05165372212346776,
+    "sensitivity: intercept shift": 0.0736473788413246,
+    "sensitivity: isotonic": 0.04491797920710377
+   }
+  ],
+  "acquisition_channel": [
+   {
+    "acquisition_channel": "apple_search_ads",
+    "n": 3612,
+    "actual": 0.10105204872646734,
+    "before (deployed v1.0.0)": 0.1192816579689705,
+    "after: Platt": 0.11502631577505615,
+    "sensitivity: intercept shift": 0.11502696944056218,
+    "sensitivity: isotonic": 0.11279524786457357
+   },
+   {
+    "acquisition_channel": "google_uac",
+    "n": 4798,
+    "actual": 0.1000416840350146,
+    "before (deployed v1.0.0)": 0.11723387033965002,
+    "after: Platt": 0.11248235618817339,
+    "sensitivity: intercept shift": 0.11301203391406363,
+    "sensitivity: isotonic": 0.11043415267005612
+   },
+   {
+    "acquisition_channel": "meta_ads",
+    "n": 5383,
+    "actual": 0.09530001857700167,
+    "before (deployed v1.0.0)": 0.11271264830333824,
+    "after: Platt": 0.10766972397464047,
+    "sensitivity: intercept shift": 0.10847263705723319,
+    "sensitivity: isotonic": 0.10599946851448788
+   },
+   {
+    "acquisition_channel": "organic",
+    "n": 11939,
+    "actual": 0.10067844878130497,
+    "before (deployed v1.0.0)": 0.11721416378101879,
+    "after: Platt": 0.11239385918116988,
+    "sensitivity: intercept shift": 0.11299142733147043,
+    "sensitivity: isotonic": 0.11038823612749497
+   },
+   {
+    "acquisition_channel": "tiktok_ads",
+    "n": 2288,
+    "actual": 0.11407342657342658,
+    "before (deployed v1.0.0)": 0.11727844096076598,
+    "after: Platt": 0.11220203306556933,
+    "sensitivity: intercept shift": 0.11307334205037088,
+    "sensitivity: isotonic": 0.11017727024152853
+   }
+  ],
+  "country": [
+   {
+    "country": "AU",
+    "n": 1065,
+    "actual": 0.09671361502347418,
+    "before (deployed v1.0.0)": 0.11760095115137986,
+    "after: Platt": 0.11504082623071724,
+    "sensitivity: intercept shift": 0.1132473492952643,
+    "sensitivity: isotonic": 0.11244963391353269
+   },
+   {
+    "country": "BR",
+    "n": 1915,
+    "actual": 0.09138381201044386,
+    "before (deployed v1.0.0)": 0.10109260866421396,
+    "after: Platt": 0.09614156116705647,
+    "sensitivity: intercept shift": 0.0967410066773539,
+    "sensitivity: isotonic": 0.09572382456687753
+   },
+   {
+    "country": "CA",
+    "n": 1299,
+    "actual": 0.12086220169361046,
+    "before (deployed v1.0.0)": 0.13341183223283942,
+    "after: Platt": 0.12966831186598976,
+    "sensitivity: intercept shift": 0.1292215588930565,
+    "sensitivity: isotonic": 0.12713218316849165
+   },
+   {
+    "country": "DE",
+    "n": 2276,
+    "actual": 0.10852372583479789,
+    "before (deployed v1.0.0)": 0.12324781141257465,
+    "after: Platt": 0.11887522600567821,
+    "sensitivity: intercept shift": 0.11901186282432188,
+    "sensitivity: isotonic": 0.11683875073498359
+   },
+   {
+    "country": "FR",
+    "n": 1392,
+    "actual": 0.10488505747126436,
+    "before (deployed v1.0.0)": 0.11701268277195917,
+    "after: Platt": 0.11051525497067433,
+    "sensitivity: intercept shift": 0.11291882490466686,
+    "sensitivity: isotonic": 0.10821346278886097
+   },
+   {
+    "country": "GB",
+    "n": 2059,
+    "actual": 0.0811073336571151,
+    "before (deployed v1.0.0)": 0.11812199329672068,
+    "after: Platt": 0.11349282079474965,
+    "sensitivity: intercept shift": 0.11388829266136108,
+    "sensitivity: isotonic": 0.11120606872298469
+   },
+   {
+    "country": "IN",
+    "n": 1272,
+    "actual": 0.12028301886792453,
+    "before (deployed v1.0.0)": 0.11662505559206418,
+    "after: Platt": 0.1120020771233921,
+    "sensitivity: intercept shift": 0.11231139386661977,
+    "sensitivity: isotonic": 0.11026770707400872
+   },
+   {
+    "country": "JP",
+    "n": 1312,
+    "actual": 0.16234756097560976,
+    "before (deployed v1.0.0)": 0.13407380308755418,
+    "after: Platt": 0.13098135090815477,
+    "sensitivity: intercept shift": 0.12985400340697426,
+    "sensitivity: isotonic": 0.1281808027188964
+   },
+   {
+    "country": "MX",
+    "n": 1182,
+    "actual": 0.09813874788494077,
+    "before (deployed v1.0.0)": 0.10486966811387059,
+    "after: Platt": 0.09941447768929113,
+    "sensitivity: intercept shift": 0.10059931898935813,
+    "sensitivity: isotonic": 0.09899025124098332
+   },
+   {
+    "country": "NL",
+    "n": 654,
+    "actual": 0.05504587155963303,
+    "before (deployed v1.0.0)": 0.10217339526445374,
+    "after: Platt": 0.09537151921477538,
+    "sensitivity: intercept shift": 0.09796356060511163,
+    "sensitivity: isotonic": 0.093345555007174
+   },
+   {
+    "country": "PL",
+    "n": 1124,
+    "actual": 0.11209964412811388,
+    "before (deployed v1.0.0)": 0.11801321292684198,
+    "after: Platt": 0.11131986217157452,
+    "sensitivity: intercept shift": 0.11393739267895532,
+    "sensitivity: isotonic": 0.10916344849501369
+   },
+   {
+    "country": "RS",
+    "n": 1157,
+    "actual": 0.09853068280034573,
+    "before (deployed v1.0.0)": 0.11388366257446506,
+    "after: Platt": 0.10861436136085412,
+    "sensitivity: intercept shift": 0.10965463232504916,
+    "sensitivity: isotonic": 0.10605948022594629
+   },
+   {
+    "country": "SE",
+    "n": 611,
+    "actual": 0.08346972176759411,
+    "before (deployed v1.0.0)": 0.1045269052956008,
+    "after: Platt": 0.0983148243605441,
+    "sensitivity: intercept shift": 0.10033506950509234,
+    "sensitivity: isotonic": 0.09666313908027072
+   },
+   {
+    "country": "TR",
+    "n": 648,
+    "actual": 0.08179012345679013,
+    "before (deployed v1.0.0)": 0.11641166984149123,
+    "after: Platt": 0.11387019904620338,
+    "sensitivity: intercept shift": 0.11204224108483021,
+    "sensitivity: isotonic": 0.1152613181595908
+   },
+   {
+    "country": "US",
+    "n": 10054,
+    "actual": 0.0958822359259996,
+    "before (deployed v1.0.0)": 0.1164046383390905,
+    "after: Platt": 0.11153259753387405,
+    "sensitivity: intercept shift": 0.11219497800821757,
+    "sensitivity: isotonic": 0.10925900222727276
+   }
+  ],
+  "flow": [
+   {
+    "flow": "main",
+    "n": 3573,
+    "actual": 0.07668625804645955,
+    "before (deployed v1.0.0)": 0.0979583931396601,
+    "after: Platt": 0.08871071292480126,
+    "sensitivity: intercept shift": 0.09409936245245733,
+    "sensitivity: isotonic": 0.08506419762035548
+   },
+   {
+    "flow": "main_lifetime",
+    "n": 1362,
+    "actual": 0.07415565345080763,
+    "before (deployed v1.0.0)": 0.07928961916665853,
+    "after: Platt": 0.05510068689481413,
+    "sensitivity: intercept shift": 0.07678520136755722,
+    "sensitivity: isotonic": 0.04701292429169719
+   },
+   {
+    "flow": "onb_trial",
+    "n": 5313,
+    "actual": 0.09937888198757763,
+    "before (deployed v1.0.0)": 0.12072707329986213,
+    "after: Platt": 0.1181913667946391,
+    "sensitivity: intercept shift": 0.11628375230048235,
+    "sensitivity: isotonic": 0.11747267775834676
+   },
+   {
+    "flow": "onb_weekly",
+    "n": 17081,
+    "actual": 0.10772203032609332,
+    "before (deployed v1.0.0)": 0.12289188711996436,
+    "after: Platt": 0.12061643871534528,
+    "sensitivity: intercept shift": 0.11844595220851754,
+    "sensitivity: isotonic": 0.11930866935460363
+   },
+   {
+    "flow": "winback",
+    "n": 691,
+    "actual": 0.11287988422575977,
+    "before (deployed v1.0.0)": 0.10026274132991965,
+    "after: Platt": 0.07688773348202058,
+    "sensitivity: intercept shift": 0.09774886134349361,
+    "sensitivity: isotonic": 0.06928463833738696
+   }
+  ]
+ },
+ "group_mae": {
+  "plan": {
+   "before (deployed v1.0.0)": 0.013008522384799555,
+   "after: Platt": 0.014783601226212254,
+   "sensitivity: intercept shift": 0.009517899054299513,
+   "sensitivity: isotonic": 0.018155620800243806
+  },
+  "days_bucket": {
+   "before (deployed v1.0.0)": 0.015041612748777593,
+   "after: Platt": 0.014054947183404528,
+   "sensitivity: intercept shift": 0.011411276612512263,
+   "sensitivity: isotonic": 0.01624790336275284
+  },
+  "acquisition_channel": {
+   "before (deployed v1.0.0)": 0.014515030932105677,
+   "after: Platt": 0.010474289701421714,
+   "sensitivity: intercept shift": 0.01068619042931931,
+   "sensitivity: isotonic": 0.009288212277744404
+  },
+  "country": {
+   "before (deployed v1.0.0)": 0.01935133198901963,
+   "after: Platt": 0.015663052328195023,
+   "sensitivity: intercept shift": 0.016252566520563734,
+   "sensitivity: isotonic": 0.014795187095645942
+  },
+  "flow": {
+   "before (deployed v1.0.0)": 0.01510825836220942,
+   "after: Platt": 0.019755693074877564,
+   "sensitivity: intercept shift": 0.012560493480068494,
+   "sensitivity: isotonic": 0.021759269884131724
+  }
+ },
+ "verdict": {
+  "platt_improves": false,
+  "deployed": false
+ }
+}
