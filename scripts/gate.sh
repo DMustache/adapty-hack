@@ -36,6 +36,11 @@ REPORT="$REPORTDIR/$MS.log"
   if [[ "$MS" == M5 ]]; then
     echo "--- live M5 fixed-model and migration QA ---"
     M5_QA_INTEGRATION=1 "$PYTHON" -m pytest -q tests/test_m5_temporal_live.py
+    echo "--- synthetic M5 experiment and policy demo ---"
+    "$PYTHON" scripts/m5_demo.py --output "$REPORTDIR/m5-demo.json"
+    echo "--- cutoff-safe synthetic audit export ---"
+    "$PYTHON" scripts/export_m5_audit.py --demo-output "$REPORTDIR/m5-demo.json" \
+      --output "$REPORTDIR/m5-audit.json"
   fi
   echo "GATE PASS $MS $SHA"
 ) 2>&1 | tee "$REPORT"
