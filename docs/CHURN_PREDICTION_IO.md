@@ -8,7 +8,7 @@ a churn predictor. `origin/temporal-churn` at
 predictor, a checksummed artifact, adapter, fixture and evaluation report.
 The deployable `lumen-temporal-catboost` 1.0.0 artifact was introduced by
 `7475a89`; the later history-feature ablation did not change it. Treat this
-version as a candidate until the external ML owner accepts it under M5-ML-001.
+artifact unchanged; M5-ML-001 verifies whether this exact version can be used.
 
 ## Predictor input and output
 
@@ -30,11 +30,11 @@ one decision time:
 }
 ```
 
-For the temporal candidate, the 23 deployed feature keys, types and null policy
+For the fixed temporal model, the 23 deployed feature keys, types and null policy
 are in `services/inference/models/temporal_catboost/metadata.json` on that
 branch. Its target is failure to renew at the next eligible renewal for any
 reason, including billing failure and refund. The ML owner must confirm this
-target and calibration before activation. A temporal request also supplies
+target and reported calibration before activation, without changing the model. A temporal request also supplies
 UTC `as_of_at`, `renewal_due_at` and positive `renewal_price_usd`;
 `renewal_horizon_days` describes the same next renewal, not a separate
 fixed-window target. Preserve existing v1 requests for other models. Do not
@@ -64,11 +64,11 @@ The inference service returns and persists:
 
 Retries keep `request_id` and `prediction_id`; conflicting feature/model
 content must be rejected rather than silently replacing an earlier prediction.
-All timestamps are UTC. The candidate supplies a CatBoost `.cbm` artifact with
+All timestamps are UTC. The fixed model supplies a CatBoost `.cbm` artifact with
 SHA256 `4f3fd0acc9944b19fd0743d3c0b8a8863b8d59e1e81065c5a0940d5b9fad1491`,
 metadata, evaluation report and deterministic fixture. M5-ML-001 must confirm
-runtime, target and calibration. A candidate may be evaluated separately but
-must not replace the active version. Its offline replay script demonstrates
+runtime, target and calibration. The service pins this exact artifact and
+refuses a changed checksum; no candidate switching or weight updates are in scope. Its offline replay script demonstrates
 synthetic snapshots; M5-BE-004 owns a cutoff-safe request builder from approved
 event sources for the running service.
 
