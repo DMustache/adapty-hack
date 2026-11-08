@@ -14,6 +14,9 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_DIR = Path(__file__).resolve().parents[2] / "models" / "temporal_catboost"
+PINNED_ID = "lumen-temporal-catboost"
+PINNED_VERSION = "1.0.0"
+PINNED_SHA256 = "4f3fd0acc9944b19fd0743d3c0b8a8863b8d59e1e81065c5a0940d5b9fad1491"
 
 
 class ArtifactIntegrityError(RuntimeError):
@@ -33,12 +36,18 @@ class TemporalCatBoostAdapter:
         self.categorical = set(meta["categorical_features"])
         self.boolean = set(meta["boolean_features"])
         self._model = None
+        if (self.model_id, self.model_version, meta["sha256"]) != (PINNED_ID, PINNED_VERSION, PINNED_SHA256):
+            raise ArtifactIntegrityError("temporal model metadata does not match the approved artifact")
+        if len(self.features) != 23 or len(set(self.features)) != 23:
+            raise ArtifactIntegrityError("temporal model feature order is invalid")
+        if list(meta["input_schema"]["required"]) != self.features:
+            raise ArtifactIntegrityError("temporal model schema does not match feature order")
 
     def load(self) -> None:
         path = self.model_dir / "model.cbm"
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         recorded = (self.model_dir / "model.cbm.sha256").read_text(encoding="utf-8").split()[0]
-        if digest != recorded or digest != self.metadata["sha256"]:
+        if digest != recorded or digest != PINNED_SHA256:
             raise ArtifactIntegrityError(f"{path}: checksum mismatch")
         from catboost import CatBoostClassifier  # imported lazily: only needed when this model is installed
         model = CatBoostClassifier()
