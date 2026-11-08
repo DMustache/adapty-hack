@@ -31,7 +31,7 @@ def revenue_curve(sim: pd.DataFrame, test_discount: float | None) -> go.Figure:
     if test_discount:
         fig.add_vline(x=test_discount, line=dict(color=ORANGE, width=2),
                       annotation_text=f"Test candidate {test_discount:.0%}", annotation_position="top left")
-    return _layout(fig, "Net revenue per eligible user over the horizon (after refunds and store fee)",
+    return _layout(fig, "Net contribution per eligible user over the horizon (after refunds, store fee, variable cost)",
                    "Discount", "USD per eligible user", "$.2f")
 
 

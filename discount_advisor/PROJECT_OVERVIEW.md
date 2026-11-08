@@ -100,22 +100,27 @@ The `win_back` value is mostly extrapolation, so treat any discount conclusion t
 For discount *d*:
 
 ```
-V_d   = V₀ × [ (1 − d) × a  +  (1 − a) × (1 − k × d) ]
-R(d)  = ( c₀ × V_d  +  (c(d) − c₀) × ρ × V_d ) × (1 − fee)
-L*(d) = (V₀ / V_d − 1) / ρ            ← break-even relative conversion lift
+revenue kept   v_d = (1 − d) × a  +  (1 − a) × (1 − k × d)      (shares of V₀)
+payments kept  P_d = a  +  (1 − a) × (1 − k × d)
+margin         m_d = (1 − fee) × v_d  −  g × P_d
+R(d)  = V₀ × ( c₀ × m_d  +  (c(d) − c₀) × ρ × m_d )   ← net contribution per eligible user
+L*(d) = (m₀ / m_d − 1) / ρ                            ← break-even relative conversion lift
 ```
 
-- `c₀ × V_d`: existing payers now pay less (**cannibalisation**).
-- `(c(d) − c₀) × ρ × V_d`: new payers, worth ρ of an ordinary payer.
+- `c₀ × m_d`: existing payers now pay less (**cannibalisation**).
+- `(c(d) − c₀) × ρ × m_d`: new payers, worth ρ of an ordinary payer.
 - `k`: **step-up churn**. Payments after the discount ends shrink by k·d.
-- The **store fee** multiplies baseline and discounted revenue alike, so it never changes break-even.
+- `g`: **variable cost per paid period** (e.g. AI compute), as a share of the list price. **ASSUMED**; the data has no
+  costs, so the default is 0 (optimise revenue). A discount cuts the price but not this cost, so with g > 0 break-even
+  rises, and a discount whose margin turns negative can never pay (break-even = ∞).
+- With g = 0 the **store fee** cancels out and L*(d) = (1 / v_d − 1) / ρ, exactly the earlier revenue-only formula.
 
 **Simplifications (stated in the app):** plan mix doesn't change with the discount; step-up churn is linear in d;
 incremental buyers differ from ordinary ones only through ρ.
 
 These formulas are validated independently in `tests/test_economics.py`. That includes hand-computed values, edge cases
-(no discount, discount touches nothing, permanent price cut), and a property test showing revenue at break-even equals
-full-price revenue for any inputs and fee.
+(no discount, discount touches nothing, permanent price cut, negative margin), a by-hand cost example, and property tests
+showing contribution at break-even equals full-price contribution for any inputs, fee and cost.
 
 ---
 
@@ -205,6 +210,7 @@ The **Sensitivity** tab shows how the best discount *under the assumptions* move
 | **Compare segments** | placements, or segments within the selected placement: payers, conversion with CI, V₀, extrapolated share, share touched, traffic, break-even, test candidate, users per arm, weeks. Cohorts under 30 payers are flagged and get no recommendation. Confounding caveat. |
 | **Baselines** | per-segment conversion with CI, payers, refund rate, observed vs expected revenue, extrapolated share, traffic · renewal curves (estimated vs extrapolated) · per-plan table (observed steps, 2nd payment, tail rate, refund rate) · plan mix · horizon warning |
 | **Data reality check** | synthetic notice, cutoff, data semantics computed at runtime, contents vs gaps, regional price chart with confounding explanation |
+| **Live Adapty** | the 5k and 50k Adapty apps vs the offline CSV for the same users (counts, refunds, cancellations, plan mix, revenue), plus the simulated discount test per arm with a significance check. Reads local snapshots only; never calls Adapty. |
 | **Method** | definitions, censoring rules, formulas, assumptions, sample-size method, limits |
 
 ---
@@ -213,41 +219,176 @@ The **Sensitivity** tab shows how the best discount *under the assumptions* move
 
 ```
 discount_advisor/
-├── app.py          Streamlit UI
-├── data.py         loading, cutoff, conversion window, chains, censoring, net receipts
-├── metrics.py      measured baselines (no Streamlit)
-├── economics.py    break-even, response curve, simulation, sensitivity, test plan (no Streamlit)
-├── charts.py       Plotly figures
+├── app.py                  Streamlit UI
+├── data.py                 loading, cutoff, conversion window, chains, censoring, net receipts
+├── metrics.py              measured baselines (no Streamlit)
+├── economics.py            break-even, response curve, simulation, sensitivity, test plan (no Streamlit)
+├── charts.py               Plotly figures
+├── adapty_live.py          read-only download of seeded profiles from a live Adapty app (section 10)
+├── build_seed_dataset.py   50k offline CSVs → seeder dataset format (section 10)
+├── seed_50k.py             seeds a new Adapty app with all 50k users (section 10)
+├── adapty_experiment.py    discount A/B test with simulated users in the live app (section 10)
+├── live_view.py            Live Adapty tab: summaries from local snapshots (no network)
+├── DEMO_SCRIPT.md          3-minute demo script with the app's default numbers
+├── .live_cache/            downloaded profiles + generated 50k dataset (no keys; not in git)
 └── tests/
     ├── test_data.py        integrity, semantics, cutoff, censoring (incl. toy chains), maturity, refunds
     ├── test_metrics.py     conversion from raw, denominators, Wilson CI, horizons, KM (toy + real), tail rule,
     │                       refunds, V₀ brute force, revenue split, a by mix and horizon, segment totals, small cohorts
     ├── test_economics.py   formulas by hand and edge cases, fee consistency, feasibility (raise, never clip),
     │                       curve properties, simulation, sensitivity, textbook sample size, power, Bonferroni,
-    │                       durations, plan verdicts and decision rule
-    └── test_app.py         the real app driven headlessly through placements, segments, offers, horizons,
-                            infeasible and degenerate assumptions, slider extremes, arms, fee, traffic override, selectors
+    │                       durations, plan verdicts and decision rule, variable cost
+    ├── test_app.py         the real app driven headlessly through placements, segments, offers, horizons,
+    │                       infeasible and degenerate assumptions, slider extremes, arms, fee, traffic override, selectors
+    ├── test_live_view.py   Live Adapty tab logic on hand-made snapshots (offline)
+    └── test_live_adapty.py live Adapty app vs offline data (skipped unless ADAPTY_LIVE=1; section 10)
 ```
 
 See the README for run commands.
 
-**Latest run (2026-11-07):** `python -m pytest tests -q` → **158 passed** in about 5½ minutes (all four files,
-including the end-to-end app sweep). Re-run after any change; this number is only valid for the code as of that date.
+**Latest runs:**
+- 2026-11-08, after adding costs and the Live Adapty tab: `python -m pytest tests -q` → **178 passed, 24 skipped** in
+  about 7½ minutes. The 24 skipped are the live Adapty checks, which need `ADAPTY_LIVE=1`.
+- 2026-11-07, live checks, 5,000-user app: **24 passed**.
+- 2026-11-07, live checks, 50,000-user app: **22 passed, 2 skipped** (the skipped two check "installed today" users, which that app
+  deliberately doesn't have).
+
+Re-run after any change; these numbers are only valid for the code as of that date.
 
 ---
 
-## 10. Limitations
+## 10. The live Adapty account
+
+The Discount Advisor reads the offline CSVs. Separately, we seeded a real Adapty account with the same synthetic
+population and checked that what Adapty stores matches what the advisor analyses.
+
+### 10.1 Seeding the hackathon app (5,000 users)
+- **Setup:** Node.js v24, Adapty CLI 0.18.0 (`npm install -g adapty@latest`), `adapty auth login`.
+- **Windows fix in the hackathon repo:** `seed_adapty.py` started the CLI by the bare name `adapty`, which Python can't
+  launch on Windows (npm installs it as `adapty.cmd`). Two lines in `Cli.__init__` now use the full path from
+  `shutil.which`. On this PC, use `..\.venv\Scripts\python.exe`: `python3` is a Microsoft Store alias.
+- **Run:** catalog first (`--skip-data`), then data (`--app-id … --skip-config`), with the secret key read from the
+  logged-in CLI, never printed.
+- **App:** *Lumen - AI Photo Editor (Hackathon)*, id `cc1f40d1-26c1-4f9d-8341-ba719971ac32`
+  - 6 products, 7 published paywall flows, 3 segments, 5 placements
+  - 4 demo A/B tests (2 live, 1 completed, 1 draft)
+  - **6,000 profiles, 3,123 transactions, 0 failures.** That's 5,000 users with 4 months of history plus 1,000
+    "installed today" copies.
+- **Tracked revenue:** the seeder dates all of it before the app's first profile, which keeps it outside Adapty's
+  monthly tracked revenue (MTR).
+
+### 10.2 Live verification (5,000-user app)
+All **6,000** profiles were downloaded (`adapty_live.py`, about 2 minutes, read-only) and compared with the offline data in
+`tests/test_live_adapty.py`. **24 of 24 checks pass.**
+
+| Check | Result |
+|---|---|
+| Every seeded profile exists, belongs to the app, carries the seed marker | ✅ 6,000 / 6,000 |
+| Custom attributes (channel, goal, AI edits, photos, push, app version) | ✅ identical for all 5,000 |
+| Store matches platform (iOS → App Store, Android → Play) | ✅ |
+| Same users are buyers / trial users | ✅ 1,393 both sides |
+| Store product IDs, cancellation reasons | ✅ identical |
+| Time shift | ✅ one constant (404,772 s ≈ 4.7 days) explains every date |
+| USD revenue | ✅ exact to the cent, **net of refunds** |
+| "Installed today" users | ✅ copies of their source user; purchases dated today |
+| Advisor-relevant aggregates | ✅ same conversion and plan mix as offline; the 5k sample sits inside the 50k population's confidence interval |
+
+Three things that look like mismatches but are **how Adapty represents data**. The tests encode them:
+- **Refunds:** a refunded receipt's expiry is set to its purchase time, and revenue drops to $0.
+- **Lifetime:** listed as a subscription item **with no expiry**, not as a non-subscription.
+- **Offers and currencies:** the profile shows the **latest** receipt's offer. Non-USD revenue is converted at Adapty's own
+  exchange rates: revenue ÷ net local price is constant per currency (variation < 3.1%), against up to 30% when computed
+  gross. So Adapty, like the Discount Advisor, treats a refunded receipt as $0.
+
+### 10.3 Discount A/B test with simulated users (`adapty_experiment.py`)
+A small end-to-end pipeline demo of what the advisor recommends.
+
+**Created in the Lumen app, all marked *(test)*:**
+- 3 products at 30% off (`lumen.annual_30off`, `lumen.monthly_30off`, `lumen.weekly_30off`)
+- a copy of the *Main - 3 plans* paywall selling them
+- a live 50/50 A/B test on placement `main`: *Discount test: main 30% off vs full price (test)*
+
+**Simulated users:** 150 real `main` users from the offline file who aren't already in the app (index ≥ 5,000), from
+outside the US and Canada, split 50/50 by hash.
+- **Control** users replay their real outcome: a paid purchase within 14 days, sent today.
+- **Discount** users get the same at 70% of the price, plus extra buyers matching the advisor's **assumed** lift at 30%
+  off (+31%).
+
+**Sent:** 150 profiles, 150 paywall views, 25 purchases, 0 errors.
+
+- **Tracked revenue:** about **$582**, under the $5,000 free limit (see 10.5). The 4 original demo tests are untouched.
+- **What it shows:** only that the pipeline works (products, paywall, A/B test, attribution). The discount arm's extra
+  buyers come from the advisor's own assumption, so **the result can't validate any discount**.
+- **What happened next (2026-11-08):** a cleanup step was started and interrupted. Before the interruption it had
+  stopped the test and deleted 23 of the simulated users (2 buyers). It was restored the same day: the 23 users and their
+  2 purchases were re-sent to the original test, so its results are complete again (150 users, 25 buyers; Adapty total
+  $593.77 at its exchange rates). A completed test can't be restarted, so a **live copy**, *(test, copy)*, now runs on
+  `main`.
+- **Result, honestly read:** control 14/83 buyers (16.9%), discount 11/67 (16.4%), difference −0.5 points, p = 0.94.
+  That's noise, as expected with 150 users: the advisor sizes such a test at about 750 per arm.
+
+### 10.4 A second app with the full 50,000 users
+- **`build_seed_dataset.py`** converts the 50,000-user CSVs into the seeder's format. Timestamps are relative to
+  2026-11-03 00:12:04 UTC; timezone and currency are mapped from country. **Verified:** converting the first 5,000
+  users reproduces the shipped dataset with **0 differences**.
+- **`seed_50k.py`** runs the unmodified seeder into a **new** app: *Lumen 50k - AI Photo Editor (Hackathon)*, id
+  `92ceed1c-9d18-4610-89fa-e94374cfe3a5`.
+  - **No "installed today" users:** at 50k they'd carry about $18k of purchases dated today. Without them, the app
+    holds only history dated before it existed, so **no new tracked revenue**.
+  - **Result:** **50,000 profiles, 29,794 transactions, 0 failures.**
+  - The run paused for about 70 minutes partway through (sleep or a lost connection) and resumed cleanly. A temporary
+    keep-awake helper covered the rest; no power settings were changed.
+- **Verification:** all 50,000 profiles downloaded (about 30 minutes) and checked. **22 passed, 2 skipped.** Total live
+  revenue is $440.6k, against $429.7k from `price_usd`; the gap is Adapty's exchange rates.
+
+### 10.5 Billing: what "tracked revenue" means here
+- **No real money moved.** The products are fictional, so no one was charged and nothing can be.
+- Adapty bills by **monthly tracked revenue (MTR)**: the value of purchases recorded in a month. It's **free up to
+  $5,000 a month**; above that it charges about 1% or limits dashboard features.
+- **Only the simulated discount test counts.** Its 25 purchases add about **$582** (control ≈ $339, 30% off ≈ $243,
+  estimated from the dataset's USD prices; Adapty's exchange rates may differ slightly). Re-sending the 2 deleted
+  purchases during the restore added about $34 more, possibly counted twice. That leaves roughly $4,300 of headroom this
+  month, assuming no other app in the account tracks revenue.
+- **Nothing else counts:** the 5k app's history and "today's users", and all of the 50k app, are dated before each app
+  existed.
+- **Nothing accumulates.** The simulated subscriptions can't renew without a real store, so the total stays at about $582
+  unless more purchases are sent.
+- **Rule from here on:** nothing that adds tracked revenue or could cost money is run without asking first.
+
+### 10.6 Current state and housekeeping
+- **Everything is kept** (decided 2026-11-08): both apps keep all their data; the original discount test is *completed*
+  with all 150 simulated users, and its live copy runs on `main`. The 4 original demo tests are unchanged.
+- **Rotate the Lumen app's secret key**, because it was pasted in chat once: App settings → General. The Adapty CLI
+  can't rotate keys, and the scripts read the current key from the CLI, so nothing breaks.
+- **Git:** `discount_advisor/` is its own repository (branch `main`; `.live_cache/` excluded). In the hackathon repo, the
+  2-line Windows fix is committed on branch `windows-cli-fix`; its `main` matches GitHub. Nothing has been pushed.
+- **Not finished:** the pitch slide deck was started (4 of 9 slides, a private claude.ai artifact) and then dropped.
+  `DEMO_SCRIPT.md` covers the demo.
+
+---
+
+## 11. Limitations
 
 - **Synthetic data**: findings describe the generated *Lumen* dataset, not real customers.
 - **Customer response is assumed**, and identical for all segments. Only an experiment can measure it.
 - **The lognormal curve shape, ρ, k and q are modelling assumptions**, varied in the Sensitivity tab but not
   included in the uncertainty band.
 - **Short history**: annual renewals are unobservable; weekly and monthly revenue beyond the observed periods is extrapolated.
-- **Revenue, not profit**: no acquisition or compute costs.
+- **Costs are an assumption**: the data has none. The variable-cost input (default 0) is a flat share of list price;
+  acquisition cost is not modelled (it's sunk by the time a user sees the paywall).
 - **Traffic is a sample**: use the override for real durations.
 - **Plan mix is held fixed** under a discount.
+- **The live discount test uses simulated users** whose response comes from the advisor's own assumption. It shows the
+  pipeline works, not that a discount works.
+- **Live revenue differs from `price_usd`** for non-USD users, because Adapty applies its own exchange rates. The advisor uses
+  the dataset's `price_usd`.
 
-## 11. Next steps
-1. Run the proposed test as an Adapty paywall A/B test on the chosen placement, then replace L₂₀ with the measured lift.
-2. Add costs to optimise profit.
-3. Build per-segment response priors once several experiments exist.
+## 12. Next steps
+1. Run the proposed test with **real** traffic as an Adapty paywall A/B test on the chosen placement, then replace L₂₀
+   with the measured lift.
+2. Feed the advisor from live Adapty data instead of the offline CSVs. Profiles (what `adapty_live.py` downloads) only
+   carry each user's *latest* receipt, which is enough for the Live Adapty comparison but not for renewal curves. Those
+   need the full receipt history, e.g. from Adapty's event exports or webhooks.
+3. Replace the flat variable-cost assumption with real cost data (AI compute per active user, support), and add
+   acquisition cost if the offer is shown at acquisition time.
+4. Build per-segment response priors once several experiments exist.

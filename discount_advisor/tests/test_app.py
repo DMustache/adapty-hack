@@ -47,7 +47,7 @@ def test_labels_and_synthetic_notice(at):
         assert tag in md
     assert "Synthetic" in md or "synthetic" in md
     assert [t.label for t in at.tabs] == ["Recommendation", "Sensitivity", "Compare segments", "Baselines",
-                                         "Data reality check", "Method"]
+                                         "Data reality check", "Live Adapty", "Method"]
 
 
 def test_every_placement(at, ds):
@@ -115,6 +115,8 @@ def test_degenerate_lift_ranges(at, rng):
     ("Worth testing only if it beats full price in ≥ this share of scenarios", 0.9),
     ("Longest acceptable test (weeks)", 2),
     ("Share of eligible traffic in the test", 0.1),
+    ("Variable cost per paid period (% of list price)", 0.3),
+    ("Variable cost per paid period (% of list price)", 0.0),
 ])
 def test_slider_extremes(at, label, value):
     w(at.sidebar.slider, label).set_value(value).run()
@@ -145,3 +147,10 @@ def test_main_area_selectors(at):
         check(at, d)
         w(at.selectbox, "Break down by").set_value(d).run()
         check(at, d)
+
+
+def test_live_tab_renders_from_snapshots(at):
+    """The Live Adapty tab must render without network access, with or without snapshots."""
+    assert not at.exception
+    texts_all = " ".join(m.value for m in at.markdown) + " ".join(c.value for c in at.caption)
+    assert "local snapshots" in texts_all

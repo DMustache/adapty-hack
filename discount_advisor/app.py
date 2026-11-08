@@ -72,6 +72,9 @@ with st.sidebar:
     k = st.slider("k: step-up churn when full price returns", 0.0, 1.0, 0.3, 0.05)
     store_fee = st.selectbox("Store fee (applied to baseline and discount alike)", [0.15, 0.30],
                              format_func=lambda x: f"{x:.0%}")
+    cost = st.slider("Variable cost per paid period (% of list price)", 0.0, 0.5, 0.0, 0.01, format="%.2f",
+                     help="e.g. AI compute or support per paying period. A discount cuts the price but not this cost, "
+                          "so break-even rises. 0 = optimise revenue only (the data contains no costs).")
     include_sampling = st.checkbox("Include sampling uncertainty of measured c₀ and V₀", value=True)
 
     st.header("4 · Experiment")
@@ -83,7 +86,7 @@ with st.sidebar:
     traffic_override = st.number_input("Real eligible users per week", 100, 10_000_000, 5000, 100) if override else None
 
 asm = Assumptions(lift_low=lift_low, lift_mode=lift_mode, lift_high=lift_high, rho=rho, k=k, q=q,
-                  store_fee=store_fee, include_sampling=include_sampling)
+                  store_fee=store_fee, cost=cost, include_sampling=include_sampling)
 survivals = product_values(ds, horizon)
 base = segment_baseline(ds, mask, audience, horizon, survivals)
 a = base.affected_share(duration)
@@ -118,8 +121,8 @@ if problem is None:
 
 max_lift = float(max_feasible_lift(base.conversion, q)) if base.conversion > 0 else float("nan")
 
-tab_rec, tab_sens, tab_cmp, tab_base, tab_data, tab_method = st.tabs(
-    ["Recommendation", "Sensitivity", "Compare segments", "Baselines", "Data reality check", "Method"])
+tab_rec, tab_sens, tab_cmp, tab_base, tab_data, tab_live, tab_method = st.tabs(
+    ["Recommendation", "Sensitivity", "Compare segments", "Baselines", "Data reality check", "Live Adapty", "Method"])
 
 # ================================================================ recommendation
 with tab_rec:
@@ -186,8 +189,9 @@ with tab_rec:
          f"first receipt {split.get('first_receipt', 1):.0%} · estimated renewals {split.get('estimated_renewals', 0):.0%}"
          f" · extrapolated tail {split.get('extrapolated_tail', 0):.0%}"],
         ["Share of V₀ the discount touches (a)", f"{a:.0%}", f"{duration_label}, this audience's plan mix"],
-        ["Net revenue per eligible user at full price", f"${base.revenue_per_install * (1 - store_fee):.2f}",
-         f"c₀ × V₀ × (1 − {store_fee:.0%} fee)"],
+        ["Net contribution per eligible user at full price",
+         f"${base.revenue_per_install * (1 - store_fee - cost):.2f}",
+         f"c₀ × V₀ × (1 − {store_fee:.0%} fee − {cost:.0%} variable cost)"],
         ["Max lift the ceiling allows", f"< {max_lift:.0%}" if max_lift == max_lift else "—", "min(1, q·c₀)/c₀ − 1"],
     ], columns=["Input", "Value", "How"])
     asm_rows = pd.DataFrame([
@@ -198,6 +202,8 @@ with tab_rec:
         ["ρ (discount-driven buyer value)", f"{rho:.0%}", "deal-seekers renew less"],
         ["k (step-up churn)", f"{k:.2f}", f"{max_discount:.0%} off loses {k * max_discount:.0%} of later payments"],
         ["Store fee", f"{store_fee:.0%}", "same for baseline and discount"],
+        ["Variable cost per paid period", f"{cost:.0%} of list price",
+         "not in the data; 0 = revenue only. A discount cuts price, not cost"],
         ["Renewal tail rule", f"mean of last {TAIL_RATES} observed renewal rates", "beyond the observed periods"],
         ["Weekly traffic", f"{traffic_override:,.0f}" if traffic_override else "— (dataset)", "override"],
     ], columns=["Input", "Value", "Note"])
@@ -372,6 +378,65 @@ says nothing about what a discount would do. There's no randomised price or disc
 the customer response is an explicit **ASSUMPTION**, and the tool designs the experiment that would measure it.
 """)
 
+# ================================================================ live adapty
+@st.cache_data(show_spinner="Reading local Adapty snapshots…")
+def live_tables():
+    import live_view as lv
+    out = {}
+    for label, (f, run, n) in lv.APPS.items():
+        snap = lv.load_snapshot(f)
+        out[label] = None if snap is None else lv.live_vs_offline(get_data(), snap, run, n)
+    exp_snap = lv.load_snapshot(lv.EXPERIMENT_FILE)
+    exp = None
+    if exp_snap is not None:
+        from adapty_experiment import plan_users
+        specs, _ = plan_users(150, "700001")
+        exp = lv.experiment_results(exp_snap, specs)
+    return out, exp
+
+
+with tab_live:
+    st.markdown(f"{DATA} The same synthetic users were seeded into real Adapty apps. These tables compare what Adapty "
+                "stores with the offline CSVs this tool analyses. They read **local snapshots** (`.live_cache/`, "
+                "refreshed with `python adapty_live.py`), so opening this tab never calls Adapty.")
+    tables, exp_res = live_tables()
+    cols = st.columns(len(tables))
+    for c, (label, tbl) in zip(cols, tables.items()):
+        c.markdown(f"**{label}**")
+        if tbl is None:
+            c.info("No snapshot yet. Run `python adapty_live.py` (read-only).")
+        else:
+            c.dataframe(tbl, hide_index=True, width="stretch")
+    st.caption("Counts and plan mix match exactly. Revenue differs by a few percent because Adapty converts local "
+               "prices at its own exchange rates; both sides are net of refunds. Full field-by-field checks: "
+               "`tests/test_live_adapty.py`.")
+
+    st.subheader("Discount A/B test in Adapty: SIMULATED users")
+    st.warning("These 150 users are **simulated**. Control users replay their real outcome from the data; discount "
+               "users get the same at 30% off, plus extra buyers drawn from this tool's *own assumed* response. The "
+               "result shows the pipeline works (products → paywall → A/B test → attribution). It can't validate a "
+               "discount.")
+    if exp_res is None:
+        st.info("No snapshot of the test users yet.")
+    else:
+        from scipy.stats import norm as _norm
+        e = exp_res
+        st.dataframe(e.rename(columns={"users": "Users", "buyers": "Buyers", "on_30off_product": "On 30%-off product",
+                                       "revenue": "Revenue (Adapty, USD)", "conversion": "Conversion",
+                                       "revenue_per_user": "Revenue / user"}).style.format({
+            "Conversion": "{:.1%}", "Revenue (Adapty, USD)": "${:,.2f}", "Revenue / user": "${:.2f}"}),
+            width="stretch")
+        n1, n2 = int(e.loc["control", "users"]), int(e.loc["discount", "users"])
+        k1, k2 = int(e.loc["control", "buyers"]), int(e.loc["discount", "buyers"])
+        pool = (k1 + k2) / (n1 + n2)
+        se = (pool * (1 - pool) * (1 / n1 + 1 / n2)) ** 0.5
+        pval = 2 * _norm.sf(abs(k2 / n2 - k1 / n1) / se) if se > 0 else 1.0
+        st.markdown(f"Difference in conversion: **{k2 / n2 - k1 / n1:+.1%}** (two-sided p = {pval:.2f}). With "
+                    f"{n1 + n2} users this is noise, which is the point of the **Recommendation** tab's sizing: "
+                    "detecting a break-even lift needs hundreds of users per arm, not dozens.")
+        st.caption("In Adapty: the original test *Discount test: main 30% off vs full price (test)* is completed "
+                   "(results kept); a live copy *(test, copy)* runs on placement `main`.")
+
 # ================================================================ method
 with tab_method:
     st.markdown(rf"""
@@ -398,8 +463,12 @@ Expected payments come from a discrete **Kaplan–Meier** curve over paid receip
   break-even.
 
 ### Discount economics · CALCULATED
-$V_d = V_0\,[(1-d)\,a + (1-a)(1-k\,d)]$ · $R(d) = (c_0 V_d + (c(d)-c_0)\,\rho\,V_d)(1-\text{{fee}})$ ·
-**break-even lift** $L^*(d) = (V_0/V_d - 1)/\rho$.
+Per payer, as shares of $V_0$: revenue kept $v_d = (1-d)\,a + (1-a)(1-k\,d)$, payments kept
+$P_d = a + (1-a)(1-k\,d)$, margin $m_d = (1-\text{{fee}})\,v_d - g\,P_d$, where $g$ is the variable cost per paid
+period (share of list price; a discount cuts the price, not this cost).
+
+$R(d) = V_0\,(c_0\,m_d + (c(d)-c_0)\,\rho\,m_d)$ · **break-even lift** $L^*(d) = (m_0/m_d - 1)/\rho$.
+With $g = 0$ the fee cancels and $L^*(d) = (1/v_d - 1)/\rho$. If $m_d \le 0$, no lift can pay for the discount.
 
 $a$ = share of V₀ paid during the discounted periods, from the audience's plan mix and renewal curves.
 Simplifications: the plan mix doesn't change with the discount; step-up churn is linear in $d$; incremental buyers

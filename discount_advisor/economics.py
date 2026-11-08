@@ -10,10 +10,15 @@ Notation (per eligible user shown the offer):
     q    market ceiling: max conversion = min(1, q*c0)                            [ASSUMED]
     L20  relative conversion lift from a 20% discount (low / most likely / high)  [ASSUMED]
     fee  store commission, applied identically to baseline and discounted revenue
+    g    variable cost per paid period (e.g. AI compute) as a share of the full list price  [ASSUMED, default 0]
 
-    V_d  = V0 * ((1 - d) * a + (1 - a) * (1 - k * d))      every payer pays less (cannibalisation)
-    R(d) = (c0 * V_d + (c(d) - c0) * rho * V_d) * (1 - fee)  net revenue per eligible user
-    L*(d) = (V0 / V_d - 1) / rho                             break-even relative conversion lift   [CALCULATED]
+    Per payer, as a share of V0 (list-price revenue over the horizon):
+      payments kept   P_d = a + (1 - a) * (1 - k * d)                    (step-up churn removes later payments)
+      revenue kept    v_d = (1 - d) * a + (1 - a) * (1 - k * d)          (every payer pays less: cannibalisation)
+      margin          m_d = (1 - fee) * v_d - g * P_d                    (the discount cuts price, not cost)
+    R(d)  = V0 * (c0 * m_d + (c(d) - c0) * rho * m_d)                     net contribution per eligible user
+    L*(d) = (m_0 / m_d - 1) / rho                                       break-even relative lift   [CALCULATED]
+    With g = 0 the fee cancels and L*(d) = (1 / v_d - 1) / rho. If m_d <= 0 the discount can never pay (L* = inf).
 
 Simplifications: the discount does not change who among the *existing* payers buys which plan (plan mix fixed);
 step-up churn is linear in d; incremental payers differ from ordinary ones only through the factor rho.
@@ -49,9 +54,25 @@ def value_factor(d, a: float, k: float = 0.0) -> np.ndarray:
     return (1 - d) * a + (1 - a) * np.clip(1 - k * d, 0, 1)
 
 
-def break_even_lift(d, a: float, rho: float = 1.0, k: float = 0.0) -> np.ndarray:
-    """Relative conversion lift at which R(d) == R(0). Store fee cancels out."""
-    return (1 / value_factor(d, a, k) - 1) / rho
+def payments_factor(d, a: float, k: float = 0.0) -> np.ndarray:
+    """Share of full-price payments still made after the discount (step-up churn)."""
+    d = np.asarray(d, dtype=float)
+    return a + (1 - a) * np.clip(1 - k * d, 0, 1)
+
+
+def margin_factor(d, a: float, k: float = 0.0, fee: float = 0.0, cost: float = 0.0) -> np.ndarray:
+    """Contribution per payer as a share of V0: revenue after fee minus variable cost per paid period."""
+    return (1 - fee) * value_factor(d, a, k) - cost * payments_factor(d, a, k)
+
+
+def break_even_lift(d, a: float, rho: float = 1.0, k: float = 0.0, fee: float = 0.0, cost: float = 0.0) -> np.ndarray:
+    """Relative conversion lift at which R(d) == R(0). With cost = 0 the store fee cancels out.
+    Returns inf where the discounted margin is not positive (no lift can pay for it)."""
+    m0 = margin_factor(0.0, a, k, fee, cost)
+    md = margin_factor(d, a, k, fee, cost)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out = (m0 / md - 1) / rho
+    return np.where(md > 0, out, np.inf)
 
 
 # --------------------------------------------------------------------------- assumed response curve
@@ -103,10 +124,11 @@ def conversion_at(d, c0, sigma, q: float) -> np.ndarray:
 
 
 def revenue_per_user(d, c0, v0, a: float, sigma, q: float, rho: float = 1.0, k: float = 0.0,
-                     store_fee: float = 0.0) -> np.ndarray:
+                     store_fee: float = 0.0, cost: float = 0.0) -> np.ndarray:
+    """Net contribution per eligible user (= net revenue when cost = 0)."""
     c = conversion_at(d, c0, sigma, q)
-    vd = np.asarray(v0, dtype=float) * value_factor(d, a, k)
-    return (c0 * vd + (c - c0) * rho * vd) * (1 - store_fee)
+    md = np.asarray(v0, dtype=float) * margin_factor(d, a, k, store_fee, cost)
+    return c0 * md + (c - c0) * rho * md
 
 
 # --------------------------------------------------------------------------- simulation
@@ -120,6 +142,7 @@ class Assumptions:
     k: float = 0.3
     q: float = 2.0
     store_fee: float = 0.15
+    cost: float = 0.0               # variable cost per paid period, share of list price (0 = revenue only)
     include_sampling: bool = True   # also draw c0 and V0 from their sampling distributions
     n_draws: int = 4000
     seed: int = 7
@@ -136,6 +159,8 @@ class Assumptions:
             errs.append("k must be in [0, 1].")
         if not (0 <= self.store_fee < 1):
             errs.append("Store fee must be in [0, 1).")
+        if not (0 <= self.cost < 1 - self.store_fee):
+            errs.append("Variable cost must be ≥ 0 and leave a positive margin at full price (cost < 1 − fee).")
         return errs
 
 
@@ -184,22 +209,23 @@ def simulate(m: Measured, asm: Assumptions, grid=DISCOUNT_GRID) -> pd.DataFrame:
     c0s, v0s = _draw_measured(m, asm, rng)
     sigma = sigma_from_anchor(c0s, lifts, asm.q)
     sigma_mode = sigma_from_anchor(m.c0, asm.lift_mode, asm.q)
-    base_draws = c0s * v0s * (1 - asm.store_fee)
-    base = m.c0 * m.v0 * (1 - asm.store_fee)
+    m0 = float(margin_factor(0.0, m.a, asm.k, asm.store_fee, asm.cost))
+    base_draws = c0s * v0s * m0
+    base = m.c0 * m.v0 * m0
     rows = []
     for d in grid:
-        r = revenue_per_user(d, c0s, v0s, m.a, sigma, asm.q, asm.rho, asm.k, asm.store_fee)
+        r = revenue_per_user(d, c0s, v0s, m.a, sigma, asm.q, asm.rho, asm.k, asm.store_fee, asm.cost)
         lift_d = conversion_at(d, c0s, sigma, asm.q) / c0s - 1
         rows.append({
             "discount": d,
             "rev_mean": r.mean(), "rev_p05": np.quantile(r, 0.05), "rev_p95": np.quantile(r, 0.95),
             "uplift_vs_base": r.mean() / base_draws.mean() - 1 if base else np.nan,
             "p_beats_base": float((r > base_draws * (1 + 1e-9)).mean()) if d > 0 else np.nan,
-            "breakeven_lift": float(break_even_lift(d, m.a, asm.rho, asm.k)),
+            "breakeven_lift": float(break_even_lift(d, m.a, asm.rho, asm.k, asm.store_fee, asm.cost)),
             "assumed_lift_mode": float(conversion_at(d, m.c0, sigma_mode, asm.q) / m.c0 - 1),
             "assumed_lift_p05": float(np.quantile(lift_d, 0.05)),
             "assumed_lift_p95": float(np.quantile(lift_d, 0.95)),
-            "revenue_per_payer": float(m.v0 * value_factor(d, m.a, asm.k) * (1 - asm.store_fee)),
+            "revenue_per_payer": float(m.v0 * margin_factor(d, m.a, asm.k, asm.store_fee, asm.cost)),
         })
     df = pd.DataFrame(rows)
     df.attrs["baseline_rev"] = base
@@ -241,12 +267,12 @@ def duration_weeks(n_per_arm: int, weekly_eligible: float, allocation: float, ar
 # --------------------------------------------------------------------------- sensitivity
 
 def best_discount(c0: float, v0: float, a: float, lift: float, asm: Assumptions, grid=DISCOUNT_GRID) -> float:
-    """Revenue-maximising discount *under these exact assumptions* (no uncertainty). NaN if infeasible."""
+    """Contribution-maximising discount *under these exact assumptions* (no uncertainty). NaN if infeasible."""
     try:
         sigma = sigma_from_anchor(c0, lift, asm.q)
     except InfeasibleAssumption:
         return float("nan")
-    r = revenue_per_user(grid, c0, v0, a, sigma, asm.q, asm.rho, asm.k)
+    r = revenue_per_user(grid, c0, v0, a, sigma, asm.q, asm.rho, asm.k, asm.store_fee, asm.cost)
     i = int(np.argmax(r))
     return float(grid[i]) if r[i] > r[0] * (1 + 1e-9) else 0.0
 
@@ -345,7 +371,7 @@ def plan_test(sim: pd.DataFrame, c0: float, exp: Experiment, rev_sd: float | Non
             verdict = "Worth testing"
         rows.append({"discount": r.discount, "breakeven_lift": r.breakeven_lift,
                      "breakeven_conv": c0 * (1 + r.breakeven_lift), "assumed_lift_mode": r.assumed_lift_mode,
-                     "p_beats_base": r.p_beats_base, "uplift_vs_base": r.uplift_vs_base, "n_per_arm": n,
+                     "p_beats_base": r.p_beats_base, "uplift_vs_base": r.uplift_vs_base, "n_per_arm": n if n else np.nan,
                      "weeks": weeks, "n_per_arm_revenue": n_rev, "verdict": verdict})
     t = pd.DataFrame(rows, columns=["discount", "breakeven_lift", "breakeven_conv", "assumed_lift_mode", "p_beats_base",
                                     "uplift_vs_base", "n_per_arm", "weeks", "n_per_arm_revenue", "verdict"])

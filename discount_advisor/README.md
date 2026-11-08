@@ -33,6 +33,23 @@ python -m pytest tests -q          # ~5 min; tests/test_app.py drives the real a
 python -m pytest tests -q --ignore tests/test_app.py   # ~20 s, core maths and data only
 ```
 
+### Live Adapty checks (optional, read-only)
+
+`tests/test_live_adapty.py` compares every seeded profile in a live Adapty app with the offline CSVs (presence, attributes,
+store, products, cancellation reasons, trial offers, expiry incl. refund rule, revenue net of refunds incl. FX, today's
+users). It is skipped unless `ADAPTY_LIVE=1`; profiles are cached in `.live_cache/` (`ADAPTY_LIVE_REFRESH=1` re-downloads).
+The secret key comes from `$ADAPTY_SECRET_KEY` or the logged-in Adapty CLI and is never stored.
+
+```bash
+ADAPTY_LIVE=1 python -m pytest tests/test_live_adapty.py -q                       # 5k app (defaults)
+ADAPTY_LIVE=1 ADAPTY_APP_ID=92ceed1c-9d18-4610-89fa-e94374cfe3a5 ADAPTY_RUN_ID=247954 \
+  ADAPTY_N_USERS=50000 ADAPTY_LIVE_EVERY=0 python -m pytest tests/test_live_adapty.py -q   # 50k app
+```
+
+Related scripts: `adapty_live.py` (download profiles), `build_seed_dataset.py` (50k CSVs → seeder format; `--verify`
+reproduces the shipped 5k file exactly), `seed_50k.py` (seed a new app with 50k users, no same-day purchases),
+`adapty_experiment.py` (discount A/B test with simulated users; adds tracked revenue, see its docstring).
+
 ## Modules
 
 | File | Role |
@@ -41,5 +58,5 @@ python -m pytest tests -q --ignore tests/test_app.py   # ~20 s, core maths and d
 | `metrics.py` | **DATA**: conversion + Wilson CI, Kaplan–Meier renewals with censoring, refunds, revenue per payer split into observed / estimated / extrapolated, discount-touched share, traffic |
 | `economics.py` | **CALCULATED** break-even and test sizing; **ASSUMED** response curve with feasibility checks; Monte Carlo; sensitivity; experiment plan |
 | `charts.py` | Plotly figures |
-| `app.py` | Streamlit UI: Recommendation · Sensitivity · Compare segments · Baselines · Data reality check · Method |
+| `app.py` | Streamlit UI: Recommendation · Sensitivity · Compare segments · Baselines · Data reality check · Live Adapty · Method |
 | `tests/` | data integrity, censoring, maturity, refunds, chains, segment totals, formulas, feasibility, sample sizes, durations, end-to-end UI |

@@ -259,3 +259,52 @@ def test_more_arms_slow_the_test():
     one = plan_test(s, 0.2, Experiment(weekly_eligible=5000, arms=1)).table.set_index("discount").weeks
     three = plan_test(s, 0.2, Experiment(weekly_eligible=5000, arms=3)).table.set_index("discount").weeks
     assert (three > one).all()
+
+
+# ---------------------------------------------------------------- variable cost
+from economics import margin_factor, payments_factor  # noqa: E402
+
+
+def test_zero_cost_reproduces_revenue_formula():
+    for d, a, k, fee in [(0.2, 0.6, 0.3, 0.15), (0.4, 1.0, 0.0, 0.3), (0.1, 0.3, 1.0, 0.0)]:
+        assert float(break_even_lift(d, a, 0.85, k, fee, 0.0)) == pytest.approx((1 / float(value_factor(d, a, k)) - 1) / 0.85)
+
+
+def test_cost_break_even_by_hand():
+    # V0 = 100, a = 0.5, d = 0.2, k = 0.3, fee = 0.15, g = 0.2
+    # revenue kept 0.87, payments kept 0.5 + 0.5*0.94 = 0.97 ; m_d = 0.85*0.87 - 0.2*0.97 = 0.5455 ; m_0 = 0.65
+    assert float(payments_factor(0.2, 0.5, 0.3)) == pytest.approx(0.97)
+    assert float(margin_factor(0.2, 0.5, 0.3, 0.15, 0.2)) == pytest.approx(0.5455)
+    assert float(break_even_lift(0.2, 0.5, 0.85, 0.3, 0.15, 0.2)) == pytest.approx((0.65 / 0.5455 - 1) / 0.85)
+
+
+def test_cost_raises_break_even():
+    for d in (0.1, 0.3, 0.5):
+        assert break_even_lift(d, 0.6, 0.85, 0.3, 0.15, 0.2) > break_even_lift(d, 0.6, 0.85, 0.3, 0.15, 0.0)
+
+
+def test_discount_that_never_pays_is_infinite():
+    # permanent 50% cut with costs at 45% of list price: discounted margin is negative
+    assert np.isinf(float(break_even_lift(0.5, 1.0, 1.0, 0.0, 0.15, 0.45)))
+
+
+@given(st.floats(0.02, 0.6), st.floats(0.05, 0.5), st.floats(0.02, 1.0), st.floats(0.3, 1.0), st.floats(0, 1),
+       st.floats(0, 0.3), st.floats(0, 0.3))
+def test_contribution_at_break_even_equals_full_price(c0, d, a, rho, k, fee, g):
+    L = float(break_even_lift(d, a, rho, k, fee, g))
+    assume(np.isfinite(L))
+    md = 50 * float(margin_factor(d, a, k, fee, g))
+    assert c0 * md + c0 * L * rho * md == pytest.approx(c0 * 50 * float(margin_factor(0, a, k, fee, g)))
+
+
+def test_simulation_with_cost_is_consistent():
+    s = simulate(M, Assumptions(cost=0.2, include_sampling=False))
+    assert s.attrs["baseline_rev"] == pytest.approx(M.c0 * M.v0 * (1 - 0.15 - 0.2))
+    assert s.loc[0, "rev_mean"] == pytest.approx(s.attrs["baseline_rev"])
+    no_cost = simulate(M, Assumptions(cost=0.0, include_sampling=False))
+    assert (s.breakeven_lift.iloc[1:] > no_cost.breakeven_lift.iloc[1:]).all()
+
+
+def test_cost_must_leave_a_margin():
+    with pytest.raises(InfeasibleAssumption):
+        simulate(M, Assumptions(cost=0.9, store_fee=0.15))
