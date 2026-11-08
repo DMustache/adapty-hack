@@ -162,7 +162,9 @@ def test_grafana_dashboard_panels():
     for p in d["panels"]:
         assert p["datasource"]["uid"] == "adapty-pg"
         sql = p["targets"][0]["rawSql"]
-        assert "churn_risk_" in sql and "'$model'" in sql
-    assert {v["name"] for v in d["templating"]["list"]} == {"model", "user"}
+        assert "churn_risk_" in sql and all(f"'${name}'" in sql for name in ("app", "model", "version", "source"))
+        assert 'user_id AS "Subscriber"' not in sql and "user_id AS metric" not in sql
+    assert {v["name"] for v in d["templating"]["list"]} == {"app", "model", "version", "source", "user"}
+    assert "md5(user_id)" in next(v for v in d["templating"]["list"] if v["name"] == "user")["query"]
     ids = [p["id"] for p in d["panels"]]
     assert len(ids) == len(set(ids))
