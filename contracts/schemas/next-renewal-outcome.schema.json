@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "next-renewal-outcome",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "app_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "enum": [
+        "simulated",
+        "adapty",
+        "sdk",
+        "external"
+      ]
+    },
+    "event_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "ingested_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prediction_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_id": {
+      "const": "lumen-temporal-catboost"
+    },
+    "model_version": {
+      "const": "1.0.0"
+    },
+    "as_of_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "renewal_due_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "experiment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "variation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "outcome_id": {
+      "type": "string"
+    },
+    "assignment_id": {
+      "type": "string"
+    },
+    "exposure_id": {
+      "type": "string"
+    },
+    "outcome_mature_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "renewed": {
+      "type": "boolean"
+    },
+    "paid_usd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "refunded": {
+      "type": "boolean"
+    },
+    "source_event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_ref": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "app_id",
+    "user_id",
+    "source",
+    "event_at",
+    "ingested_at",
+    "idempotency_key",
+    "prediction_id",
+    "model_id",
+    "model_version",
+    "as_of_at",
+    "renewal_due_at",
+    "experiment_id",
+    "variation_id",
+    "outcome_id",
+    "assignment_id",
+    "exposure_id",
+    "outcome_mature_at",
+    "renewed",
+    "paid_usd",
+    "refunded",
+    "source_event_id",
+    "evidence_ref"
+  ]
+}

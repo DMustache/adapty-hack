@@ -1,0 +1,231 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "request_id": {
+      "minLength": 1,
+      "title": "Request Id",
+      "type": "string"
+    },
+    "app_id": {
+      "minLength": 1,
+      "title": "App Id",
+      "type": "string"
+    },
+    "user_id": {
+      "minLength": 1,
+      "title": "User Id",
+      "type": "string"
+    },
+    "model_id": {
+      "const": "lumen-temporal-catboost"
+    },
+    "renewal_horizon_days": {
+      "maximum": 365,
+      "minimum": 1,
+      "title": "Renewal Horizon Days",
+      "type": "integer"
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "as_of_at",
+        "renewal_due_at"
+      ],
+      "properties": {
+        "as_of_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "renewal_due_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "feature_source_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "features": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "lumen-temporal-catboost features",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plan",
+        "platform",
+        "country",
+        "acquisition_channel",
+        "onboarding_goal",
+        "push_opt_in",
+        "app_version",
+        "placement",
+        "flow",
+        "renewal_price_usd",
+        "price_index",
+        "ai_edits_first_day",
+        "photos_imported",
+        "started_with_trial",
+        "tenure_days",
+        "renewal_count",
+        "days_until_renewal",
+        "days_since_last_payment",
+        "historical_renewal_success_rate",
+        "billing_issues_last_30d",
+        "days_since_install",
+        "auto_renew_off",
+        "days_since_auto_renew_off"
+      ],
+      "properties": {
+        "plan": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "platform": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "acquisition_channel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "onboarding_goal": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "push_opt_in": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "app_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "placement": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "flow": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "renewal_price_usd": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "price_index": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ai_edits_first_day": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "photos_imported": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "started_with_trial": {
+          "type": "boolean"
+        },
+        "tenure_days": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "renewal_count": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "days_until_renewal": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "days_since_last_payment": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "historical_renewal_success_rate": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "billing_issues_last_30d": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "days_since_install": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "auto_renew_off": {
+          "type": "boolean"
+        },
+        "days_since_auto_renew_off": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "required": [
+    "request_id",
+    "app_id",
+    "user_id",
+    "model_id",
+    "renewal_horizon_days",
+    "context",
+    "features"
+  ],
+  "title": "TemporalChurnPredictionRequest",
+  "type": "object"
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "app_id": "lumen-demo",
+  "user_id": "synthetic-pseudonym-001",
+  "source": "simulated",
+  "event_at": "2026-11-08T12:00:00Z",
+  "ingested_at": "2026-11-08T12:00:01Z",
+  "idempotency_key": "demo-profile-sync",
+  "prediction_id": "prediction-001",
+  "model_id": "lumen-temporal-catboost",
+  "model_version": "1.0.0",
+  "as_of_at": "2026-11-08T12:00:00Z",
+  "renewal_due_at": "2026-11-15T12:00:00Z",
+  "cohort_id": "cohort-001",
+  "profile_ref": "sandbox-profile-001",
+  "identity_map_ref": "restricted-map-001",
+  "attribute_name": "churn_cohort",
+  "attribute_value": "cohort-001",
+  "sync_status": "pending",
+  "propagation_checked_at": null,
+  "identity_kind": "adapty_profile_id",
+  "identity_verified_at": "2026-11-08T11:59:00Z"
+}

@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "draft-test",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "app_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "enum": [
+        "simulated",
+        "adapty",
+        "sdk",
+        "external"
+      ]
+    },
+    "event_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "ingested_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cohort_id": {
+      "type": "string"
+    },
+    "policy_version": {
+      "type": "string"
+    },
+    "experiment_id": {
+      "type": "string"
+    },
+    "placement_id": {
+      "type": "string"
+    },
+    "segment_id": {
+      "type": "string"
+    },
+    "control_flow_id": {
+      "type": "string"
+    },
+    "treatment_flow_id": {
+      "type": "string"
+    },
+    "control_variation_id": {
+      "type": "string"
+    },
+    "treatment_variation_id": {
+      "type": "string"
+    },
+    "offer_product_id": {
+      "type": "string"
+    },
+    "status": {
+      "const": "draft"
+    },
+    "budget_mode": {
+      "const": "estimate_only"
+    }
+  },
+  "required": [
+    "schema_version",
+    "app_id",
+    "source",
+    "event_at",
+    "ingested_at",
+    "idempotency_key",
+    "cohort_id",
+    "policy_version",
+    "experiment_id",
+    "placement_id",
+    "segment_id",
+    "control_flow_id",
+    "treatment_flow_id",
+    "control_variation_id",
+    "treatment_variation_id",
+    "offer_product_id",
+    "status",
+    "budget_mode"
+  ]
+}

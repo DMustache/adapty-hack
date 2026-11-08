@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "model-metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "model_id": {
+      "const": "lumen-temporal-catboost"
+    },
+    "model_version": {
+      "const": "1.0.0"
+    },
+    "artifact_sha256": {
+      "const": "4f3fd0acc9944b19fd0743d3c0b8a8863b8d59e1e81065c5a0940d5b9fad1491"
+    },
+    "target": {
+      "const": "failure to renew at the next eligible renewal event (any reason)"
+    },
+    "features": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "const": "plan"
+        },
+        {
+          "const": "platform"
+        },
+        {
+          "const": "country"
+        },
+        {
+          "const": "acquisition_channel"
+        },
+        {
+          "const": "onboarding_goal"
+        },
+        {
+          "const": "push_opt_in"
+        },
+        {
+          "const": "app_version"
+        },
+        {
+          "const": "placement"
+        },
+        {
+          "const": "flow"
+        },
+        {
+          "const": "renewal_price_usd"
+        },
+        {
+          "const": "price_index"
+        },
+        {
+          "const": "ai_edits_first_day"
+        },
+        {
+          "const": "photos_imported"
+        },
+        {
+          "const": "started_with_trial"
+        },
+        {
+          "const": "tenure_days"
+        },
+        {
+          "const": "renewal_count"
+        },
+        {
+          "const": "days_until_renewal"
+        },
+        {
+          "const": "days_since_last_payment"
+        },
+        {
+          "const": "historical_renewal_success_rate"
+        },
+        {
+          "const": "billing_issues_last_30d"
+        },
+        {
+          "const": "days_since_install"
+        },
+        {
+          "const": "auto_renew_off"
+        },
+        {
+          "const": "days_since_auto_renew_off"
+        }
+      ],
+      "minItems": 23,
+      "maxItems": 23
+    },
+    "feature_schema": {
+      "type": "object"
+    },
+    "review_source": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "model_id",
+    "model_version",
+    "artifact_sha256",
+    "target",
+    "features",
+    "feature_schema",
+    "review_source"
+  ]
+}
