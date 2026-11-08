@@ -9,7 +9,8 @@ import psycopg
 
 def main():
     migrations = [Path("/app/postgres/init/003-temporal-predictions.sql"),
-                  Path("/app/postgres/init/005-experiment-lineage.sql")]
+                  Path("/app/postgres/init/005-experiment-lineage.sql"),
+                  Path("/app/postgres/init/006-retention-candidates.sql")]
     for attempt in range(30):
         try:
             conn = psycopg.connect(os.environ["DATABASE_URL"])
