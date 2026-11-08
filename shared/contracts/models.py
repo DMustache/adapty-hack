@@ -27,6 +27,7 @@ class ChurnPredictionRequest(BaseModel):
     as_of_at: datetime | None = None
     renewal_due_at: datetime | None = None
     renewal_price_usd: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    plan_type: Literal["weekly", "monthly"] | None = None
 
     @model_validator(mode="after")
     def validate_temporal(self):
@@ -50,6 +51,7 @@ class ChurnPredictionResult(BaseModel):
     as_of_at: datetime | None = None
     renewal_due_at: datetime | None = None
     renewal_price_usd: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    plan_type: Literal["weekly", "monthly"] | None = None
 
     @model_validator(mode="after")
     def validate_temporal(self):

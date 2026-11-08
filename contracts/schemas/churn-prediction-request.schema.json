@@ -81,6 +81,22 @@
       ],
       "default": null,
       "title": "Renewal Price Usd"
+    },
+    "plan_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "weekly",
+            "monthly"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Plan Type"
     }
   },
   "required": [
