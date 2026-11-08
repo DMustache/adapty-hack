@@ -86,4 +86,4 @@ See `.workflow/README.md`, `docs/ARCHITECTURE.md`, and `docs/MODEL_HANDOFF.md`.
 
 ### Project state
 
-This is a **runnable mock infrastructure scaffold with planned worktree milestones**, not a trained or calibrated churn model, not a proven discount optimizer, and not a production Adapty integration. Unit/contract tests are supplied; container E2E depends on Docker availability.
+This is a **runnable synthetic hackathon demo**. It includes the unchanged, externally supplied `lumen-temporal-catboost` 1.0.0 artifact alongside a separate mock adapter, plus simulated experiment lineage. The demo does not establish real-customer calibration, measured discount uplift, or a production Adapty integration. See [M5 demo](docs/M5_DEMO.md) and [M6 data requirements](docs/M6_DATA_REQUIREMENTS.md); container E2E depends on Docker availability.
