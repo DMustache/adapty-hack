@@ -189,7 +189,7 @@ def main(data_dir=None) -> dict:
     train, test, test_start = holdout(snaps, cutoff)
     y, price, groups = test["churn"].to_numpy(), test["renewal_price_usd"].to_numpy(float), test["user_id"].to_numpy()
     results, preds, models = {}, {}, {}
-    for name, features in S.FEATURE_SETS.items():
+    for name, features in ((n, S.FEATURE_SETS[n]) for n in S.EVALUATED_MODELS):
         cv = []
         for params in GRID:
             ll = []

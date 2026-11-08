@@ -95,10 +95,77 @@ def test_future_events_do_not_change_past_features():
     tx2.loc[tx2.user_id == "a", "renew_status_changed_at"] = T + 20 * DAY
     tx2.loc[tx2.user_id == "a", "billing_issue_detected_at"] = T + 25 * DAY
     alt = S.build_snapshots(users, tx2, cutoff=T + 60 * DAY)
-    feats = [f for f in S.FEATURE_SETS["temporal"]]
+    feats = [f for f in S.FEATURE_SETS["temporal_extended"]]
     a = base[base.as_of_at <= pivot].set_index(["user_id", "as_of_at"])[feats]
     b = alt[alt.as_of_at <= pivot].set_index(["user_id", "as_of_at"])[feats]
     pd.testing.assert_frame_equal(a.sort_index(), b.sort_index())
+
+
+def _receipt(user, seq, product, start_days, length_days, price, **kw):
+    row = {"user_id": user, "seq": seq, "product": product, "purchase_type": "subscription", "offer": None,
+           "price_usd": price, "purchased_at": T + start_days * DAY, "expires_at": T + (start_days + length_days) * DAY,
+           "renew_status": True, "renew_status_changed_at": pd.NaT, "refunded_at": pd.NaT,
+           "billing_issue_detected_at": pd.NaT}
+    row.update(kw)
+    return row
+
+
+def test_offer_features_trial_then_paid():
+    chain = [_receipt("a", 0, "weekly", -3, 3, 0.0, offer="free_trial"),
+             _receipt("a", 1, "weekly", 0, 7, 6.99), _receipt("a", 2, "weekly", 7, 7, 6.99)]
+    users, tx = _frames(chain)
+    s = S.build_snapshots(users, tx, cutoff=T + 60 * DAY)
+    assert s[s.seq == 1]["first_renewal_after_offer"].all() and (s[s.seq == 1]["paid_periods_since_offer"] == 1).all()
+    assert not s[s.seq == 2]["first_renewal_after_offer"].any() and (s[s.seq == 2]["paid_periods_since_offer"] == 2).all()
+    direct, = [_receipt("b", 0, "weekly", 0, 7, 6.99)]
+    users, tx = _frames([direct])
+    s = S.build_snapshots(users, tx, cutoff=T + 60 * DAY)
+    assert not s["first_renewal_after_offer"].any() and s["paid_periods_since_offer"].isna().all()
+
+
+def test_plan_change_counted_from_switch_onwards():
+    chain = [_receipt("a", 0, "weekly", 0, 7, 6.99), _receipt("a", 1, "monthly", 7, 30, 12.99)]
+    users, tx = _frames(chain)
+    s = S.build_snapshots(users, tx, cutoff=T + 60 * DAY)
+    assert (s[s.as_of_at < T + 7 * DAY]["plan_changes"] == 0).all()
+    assert (s[s.as_of_at >= T + 7 * DAY]["plan_changes"] == 1).all()
+
+
+def test_toggles_count_both_directions_and_recency():
+    chain = [_receipt("a", 0, "weekly", 0, 7, 6.99, renew_status_changed_at=T + 2 * DAY),
+             _receipt("a", 1, "weekly", 7, 7, 6.99, renew_status=False, renew_status_changed_at=T + 9 * DAY)]
+    users, tx = _frames(chain)
+    s = S.build_snapshots(users, tx, cutoff=T + 60 * DAY).set_index("as_of_at")
+    assert s.loc[T + 1 * DAY, "auto_renew_toggles"] == 0 and np.isnan(s.loc[T + 1 * DAY, "days_since_auto_renew_change"])
+    assert s.loc[T + 3 * DAY, "auto_renew_toggles"] == 1 and s.loc[T + 3 * DAY, "days_since_auto_renew_change"] == 1
+    assert s.loc[T + 10 * DAY, "auto_renew_toggles"] == 2 and s.loc[T + 10 * DAY, "days_since_auto_renew_change"] == 1
+
+
+def test_price_median_uses_only_past_receipts():
+    a = [_receipt("a", 0, "weekly", 0, 7, 4.0)]
+    b = [_receipt("b", 0, "weekly", 3, 7, 8.0)]           # a pricier receipt that only exists from day 3
+    users, tx = _frames(a, b)
+    s = S.build_snapshots(users, tx, cutoff=T + 60 * DAY)
+    sa = s[s.user_id == "a"].set_index("as_of_at")["price_vs_country_median"]
+    assert sa.loc[T + 1 * DAY] == 1.0                     # only a's own receipt is known
+    assert sa.loc[T + 4 * DAY] == pytest.approx(4.0 / 6.0)  # median of 4 and 8 once b's receipt exists
+
+
+def test_prior_refunds_counted_after_they_happen():
+    chain = [_receipt("a", 0, "weekly", 0, 7, 6.99, refunded_at=T + 6.5 * DAY),
+             _receipt("a", 1, "weekly", 7, 7, 6.99)]
+    users, tx = _frames(chain)
+    s = S.build_snapshots(users, tx, cutoff=T + 60 * DAY)
+    assert (s[s.seq == 0]["prior_refunds"] == 0).all() and (s[s.seq == 1]["prior_refunds"] == 1).all()
+
+
+def test_cancellation_reason_is_never_used():
+    users, tx = _frames(_tx("a", 3, renew_status=False), _tx("b", 2))
+    tx_a = tx.assign(cancellation_reason=None)
+    tx_b = tx.assign(cancellation_reason="voluntarily_cancelled")
+    feats = S.FEATURE_SETS["temporal_extended"]
+    pd.testing.assert_frame_equal(S.build_snapshots(users, tx_a, T + 60 * DAY)[feats],
+                                  S.build_snapshots(users, tx_b, T + 60 * DAY)[feats])
 
 
 def test_feature_record_is_json_ready():

@@ -85,6 +85,25 @@ models include them. Removing them makes every model worse:
 | temporal_behaviour | 0.09171 → 0.09074 | +0.00096 (+0.00066 to +0.00127) | 0.103 → 0.118 |
 | temporal | 0.06089 → 0.06011 | +0.00078 (+0.00061 to +0.00095) | 0.509 → 0.518 |
 
+**Subscription-history features** (`python -m ml.temporal_churn.ablation_history`): added as point-in-time
+features in the candidate set `temporal_extended`, each using only events dated ≤ `as_of_at`. `cancellation_reason`
+is never used (a test checks that changing it changes no feature). Each group was added to the deployed model. Rule
+for "helps", fixed before running: lower Brier in all 3 chronological CV folds **and** holdout gain with 95% CI
+above 0.
+
+| Group | Varies in this data | CV folds improved | Holdout Brier gain (95% CI) | Helps |
+|---|---|---|---|---|
+| Auto-renew toggle count + days since last change | yes, but every change is a single switch-off, so it duplicates `auto_renew_off` / `days_since_auto_renew_off` | 0/3 | −0.00001 (−0.00005 to +0.00002) | no |
+| Product/plan changes | no: one product per subscriber, always 0 | 0/3 | 0 | no |
+| First full-price renewal after an offer (+ paid periods since offer) | yes, but every weekly subscriber started with a free trial, so it equals "weekly and no renewal yet" | 0/3 | +0.00001 (−0.00004 to +0.00005) | no |
+| Price relative to country median (past receipts only) | no: one price per product per country, always 1.0 | 0/3 | 0 | no |
+| Prior refunds | no: refunds only hit a subscription's last receipt and end it, always 0 at snapshot time | 0/3 | 0 | no |
+| All groups together | — | 1/3 | −0.00001 (−0.00004 to +0.00002) | no |
+
+Trial vs direct start was already a feature (`started_with_trial`), but in this data it is identical to the plan
+(weekly = trial, monthly = direct). **The deployed model is unchanged.** The features stay in `temporal_extended`,
+covered by tests on hand-made histories where they vary, so they can be re-evaluated on real data.
+
 **Reading the results honestly:**
 - The time-aware gain comes almost entirely from **auto-renew status over time**: seeing that a subscriber has switched
   it off, and since when.

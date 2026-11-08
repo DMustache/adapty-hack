@@ -29,7 +29,7 @@ def main(data_dir=None) -> dict:
     train, test, _ = holdout(S.build_snapshots(users, tx, cutoff), cutoff)
     y, groups = test["churn"].to_numpy(), test["user_id"].to_numpy()
     out = {}
-    for name, features in S.FEATURE_SETS.items():
+    for name, features in ((n, S.FEATURE_SETS[n]) for n in S.EVALUATED_MODELS):
         reduced = [f for f in features if f not in ATTRIBUTES]
         p_full = predict(fit(train, features, params[name]), test, features)
         p_red = predict(fit(train, reduced, params[name]), test, reduced)

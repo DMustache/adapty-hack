@@ -39,6 +39,18 @@ TEMPORAL_NUMERIC = ["tenure_days", "renewal_count", "days_until_renewal", "days_
 STATUS_BOOLEAN = ["auto_renew_off"]
 STATUS_NUMERIC = ["days_since_auto_renew_off"]
 
+# Subscription-history features (all point-in-time: only events dated <= as_of_at). cancellation_reason is never
+# used: it is only known once a subscription has ended. Groups are evaluated one by one in ablation_history.py.
+HISTORY_GROUPS = {
+    "auto_renew_toggles": ["auto_renew_toggles", "days_since_auto_renew_change"],
+    "plan_changes": ["plan_changes"],
+    "first_full_price_renewal_after_offer": ["first_renewal_after_offer", "paid_periods_since_offer"],
+    "price_vs_country_median": ["price_vs_country_median"],
+    "prior_refunds": ["prior_refunds"],
+}
+HISTORY_BOOLEAN = ["first_renewal_after_offer"]
+HISTORY_FEATURES = [f for g in HISTORY_GROUPS.values() for f in g]
+
 FEATURE_SETS = {
     # attributes known at sign-up only: one value per subscription period, whatever the date
     "static": STATIC_CATEGORICAL + STATIC_NUMERIC + STATIC_BOOLEAN,
@@ -48,8 +60,12 @@ FEATURE_SETS = {
     "temporal": STATIC_CATEGORICAL + STATIC_NUMERIC + STATIC_BOOLEAN + TEMPORAL_NUMERIC
                 + STATUS_BOOLEAN + STATUS_NUMERIC,
 }
+# candidate set: deployed temporal features + subscription-history features. Evaluated in ablation_history.py;
+# not deployed: none of the groups improved the model on this data (2026-11-08).
+FEATURE_SETS["temporal_extended"] = FEATURE_SETS["temporal"] + HISTORY_FEATURES
+EVALUATED_MODELS = ("static", "temporal_behaviour", "temporal")   # trained/compared by train.py and ablation.py
 CATEGORICAL = set(STATIC_CATEGORICAL)
-BOOLEAN = set(STATIC_BOOLEAN + STATUS_BOOLEAN)
+BOOLEAN = set(STATIC_BOOLEAN + STATUS_BOOLEAN + HISTORY_BOOLEAN)
 
 
 def find_data_dir(explicit: str | Path | None = None) -> Path:
@@ -148,10 +164,63 @@ def build_snapshots(users: pd.DataFrame, tx: pd.DataFrame, cutoff: pd.Timestamp,
     s["platform"] = s["platform"].str.lower()
     s["app_version"] = s["app_version"].astype(str)
     s["days_since_install"] = (s["as_of_at"] - s["install_at"]) / day
+    s = s.reset_index(drop=True)
+    _add_history_features(s, users, tx)
     resolved = s["renewal_due_at"] <= cutoff - pd.Timedelta(days=OUTCOME_MARGIN_DAYS)
     s["churn"] = np.where(resolved, (~s["renewed"]).astype(float), np.nan)
-    keep = ["user_id", "seq", "as_of_at", "renewal_due_at", "churn"] + FEATURE_SETS["temporal"]
+    keep = ["user_id", "seq", "as_of_at", "renewal_due_at", "churn"] + FEATURE_SETS["temporal_extended"]
     return s[keep].sort_values(["as_of_at", "user_id"]).reset_index(drop=True)
+
+
+def _events_up_to(s: pd.DataFrame, events: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+    """For each snapshot row: number of the subscriber's events with t <= as_of_at, and the latest such t."""
+    if events.empty:
+        return pd.Series(0.0, index=s.index), pd.Series(pd.NaT, index=s.index, dtype="datetime64[ns, UTC]")
+    snap = s[["user_id", "as_of_at"]].reset_index().rename(columns={"index": "row"})
+    m = snap.merge(events[["user_id", "t"]], on="user_id")
+    m = m[m["t"] <= m["as_of_at"]]
+    g = m.groupby("row")["t"]
+    return (g.size().reindex(s.index, fill_value=0).astype(float),
+            g.max().reindex(s.index).astype("datetime64[ns, UTC]"))
+
+
+def _add_history_features(s: pd.DataFrame, users: pd.DataFrame, tx: pd.DataFrame) -> None:
+    day = pd.Timedelta(days=1)
+    t = tx.sort_values(["user_id", "purchased_at", "seq"])
+    # auto-renew toggles: every recorded renew-status change (either direction)
+    toggles = t.loc[t["renew_status_changed_at"].notna(), ["user_id", "renew_status_changed_at"]] \
+        .rename(columns={"renew_status_changed_at": "t"})
+    s["auto_renew_toggles"], last_toggle = _events_up_to(s, toggles)
+    s["days_since_auto_renew_change"] = (s["as_of_at"] - last_toggle) / day
+    # plan changes: a receipt whose product differs from the subscriber's previous receipt
+    prev = t.groupby("user_id")["product"].shift()
+    changes = t.loc[prev.notna() & (t["product"] != prev), ["user_id", "purchased_at"]].rename(columns={"purchased_at": "t"})
+    s["plan_changes"], _ = _events_up_to(s, changes)
+    # offers (intro/promo, incl. free trials): paid periods since the latest offer; the period right after it ends in
+    # the first full-price renewal
+    offers = t.loc[t["offer"].notna(), ["user_id", "purchased_at"]].rename(columns={"purchased_at": "t"})
+    n_offers, last_offer = _events_up_to(s, offers)
+    paid = t.loc[t["price_usd"] > 0, ["user_id", "purchased_at"]].rename(columns={"purchased_at": "t"})
+    snap = s[["user_id", "as_of_at"]].assign(last_offer=last_offer).reset_index().rename(columns={"index": "row"})
+    m = snap.merge(paid, on="user_id")
+    m = m[(m["t"] <= m["as_of_at"]) & m["last_offer"].notna() & (m["t"] > m["last_offer"])]
+    since = m.groupby("row").size().reindex(s.index, fill_value=0).astype(float)
+    s["paid_periods_since_offer"] = np.where(n_offers > 0, since, np.nan)
+    s["first_renewal_after_offer"] = (n_offers > 0) & (since == 1)
+    # price vs the median paid price of the same product in the same country, from receipts up to as_of_at only
+    country = users.set_index("user_id")["country"]
+    pr = t.loc[t["price_usd"] > 0, ["user_id", "product", "purchased_at", "price_usd"]].copy()
+    pr["country"] = pr["user_id"].map(country)
+    pr = pr.sort_values("purchased_at")
+    pr["median"] = pr.groupby(["country", "product"])["price_usd"].transform(lambda x: x.expanding().median())
+    left = s[["as_of_at", "country", "plan"]].reset_index().rename(columns={"index": "row"}).sort_values("as_of_at")
+    right = pr[["purchased_at", "country", "product", "median"]].rename(columns={"product": "plan"})
+    med = pd.merge_asof(left, right, left_on="as_of_at", right_on="purchased_at", by=["country", "plan"],
+                        direction="backward").set_index("row")["median"].reindex(s.index)
+    s["price_vs_country_median"] = s["renewal_price_usd"] / med
+    # refunds the subscriber received before the snapshot
+    refunds = t.loc[t["refunded_at"].notna(), ["user_id", "refunded_at"]].rename(columns={"refunded_at": "t"})
+    s["prior_refunds"], _ = _events_up_to(s, refunds)
 
 
 def _billing_counts(s: pd.DataFrame, tx: pd.DataFrame) -> np.ndarray:
