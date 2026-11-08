@@ -19,13 +19,12 @@ ADAPTERS = {MockChurnAdapter.model_id: MockChurnAdapter()}
 
 
 def _register_temporal_model() -> None:
-    """Register the researcher's temporal CatBoost model if its artifact is installed; the mock stays available."""
-    try:
-        from services.inference.app.adapters.temporal_catboost import TemporalCatBoostAdapter
-        adapter = TemporalCatBoostAdapter()
-    except (FileNotFoundError, ImportError) as exc:
-        logger.info("Temporal churn model not installed: %s", exc)
+    """Load the approved artifact; a broken installation must fail startup."""
+    from services.inference.app.adapters.temporal_catboost import DEFAULT_DIR, TemporalCatBoostAdapter
+    if not DEFAULT_DIR.exists() and not os.getenv("TEMPORAL_CHURN_MODEL_DIR"):
+        logger.info("Temporal churn artifact directory not installed")
         return
+    adapter = TemporalCatBoostAdapter()
     ADAPTERS[adapter.model_id] = adapter
 
 
@@ -75,6 +74,29 @@ async def predict(request: ChurnPredictionRequest):
         validate(instance=request.features, schema=adapter.get_input_schema())
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=f"Invalid model features: {exc.message}") from exc
+    as_of_at, renewal_due_at, renewal_price_usd = (
+        request.as_of_at, request.renewal_due_at, request.renewal_price_usd
+    )
+    if request.model_id == "lumen-temporal-catboost":
+        context = request.context
+        if set(context) - {"as_of_at", "renewal_due_at", "feature_source_ref"}:
+            raise HTTPException(status_code=422, detail="Unknown temporal context field")
+        try:
+            if "as_of_at" in context:
+                as_of_at = datetime.fromisoformat(context["as_of_at"].replace("Z", "+00:00"))
+            if "renewal_due_at" in context:
+                renewal_due_at = datetime.fromisoformat(context["renewal_due_at"].replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail="Invalid temporal context time") from exc
+        renewal_price_usd = request.features["renewal_price_usd"]
+        if request.renewal_price_usd is not None and request.renewal_price_usd != renewal_price_usd:
+            raise HTTPException(status_code=422, detail="Conflicting renewal prices")
+        if as_of_at is None or renewal_due_at is None or as_of_at.tzinfo is None or renewal_due_at.tzinfo is None:
+            raise HTTPException(status_code=422, detail="Temporal model requires UTC cutoff and renewal times")
+        if as_of_at.utcoffset().total_seconds() != 0 or renewal_due_at.utcoffset().total_seconds() != 0:
+            raise HTTPException(status_code=422, detail="Temporal times must be UTC")
+        if renewal_due_at <= as_of_at:
+            raise HTTPException(status_code=422, detail="Renewal must follow feature cutoff")
     probability = adapter.predict(request.user_id, request.features, request.context)
     if (isinstance(probability, bool) or not isinstance(probability, (int, float))
             or not math.isfinite(probability) or not 0 <= probability <= 1):
@@ -89,8 +111,8 @@ async def predict(request: ChurnPredictionRequest):
         prediction_source=adapter.source, predicted_at=datetime.now(timezone.utc),
         renewal_horizon_days=request.renewal_horizon_days,
         churn_probability=float(probability),
-        as_of_at=request.as_of_at, renewal_due_at=request.renewal_due_at,
-        renewal_price_usd=request.renewal_price_usd,
+        as_of_at=as_of_at, renewal_due_at=renewal_due_at,
+        renewal_price_usd=renewal_price_usd,
     )
     await forward_to_analytics("/v1/ingest/predictions", result.model_dump(mode="json"))
     return result
