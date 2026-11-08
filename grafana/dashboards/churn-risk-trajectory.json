@@ -2,92 +2,429 @@
   "id": null,
   "uid": "churn-risk-trajectory",
   "title": "Churn Risk Over Time (Synthetic Lumen)",
-  "description": "Repeated churn predictions per subscriber from the temporal CatBoost model. Probabilities describe risk of not renewing at the next eligible renewal; revenue at risk = probability x next renewal price. Not realized or saved revenue.",
-  "tags": ["adapty", "retention", "churn", "temporal"],
-  "timezone": "utc", "schemaVersion": 39, "version": 1, "editable": false,
-  "refresh": "1m", "time": {"from": "now-120d", "to": "now"},
-  "annotations": {"list": []},
-  "templating": {"list": [
-    {
-      "name": "model", "label": "Model", "type": "query",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "query": "SELECT DISTINCT model_id FROM churn_predictions WHERE as_of_at IS NOT NULL ORDER BY 1",
-      "definition": "SELECT DISTINCT model_id FROM churn_predictions WHERE as_of_at IS NOT NULL ORDER BY 1",
-      "refresh": 1, "includeAll": false, "multi": false, "sort": 1
-    },
-    {
-      "name": "user", "label": "Subscriber", "type": "query",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "query": "SELECT user_id FROM churn_risk_current WHERE model_id = '$model' ORDER BY churn_probability DESC, user_id LIMIT 200",
-      "definition": "SELECT user_id FROM churn_risk_current WHERE model_id = '$model' ORDER BY churn_probability DESC, user_id LIMIT 200",
-      "refresh": 2, "includeAll": false, "multi": true, "sort": 0
-    }
-  ]},
+  "description": "Fixed-model next-renewal risk on synthetic Lumen records. Source and model version are explicit. Revenue at risk is illustrative probability times next-renewal price, never saved revenue.",
+  "tags": [
+    "adapty",
+    "retention",
+    "churn",
+    "temporal"
+  ],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "refresh": "1m",
+  "time": {
+    "from": "now-180d",
+    "to": "now"
+  },
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "source",
+        "label": "Prediction source",
+        "type": "custom",
+        "query": "external,mock",
+        "current": {
+          "text": "external",
+          "value": "external"
+        },
+        "includeAll": false,
+        "multi": false
+      },
+      {
+        "name": "app",
+        "label": "App",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "query": "SELECT DISTINCT app_id FROM churn_risk_current WHERE prediction_source = '$source' ORDER BY 1",
+        "definition": "SELECT DISTINCT app_id FROM churn_risk_current WHERE prediction_source = '$source' ORDER BY 1",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "sort": 1
+      },
+      {
+        "name": "model",
+        "label": "Model",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "query": "SELECT DISTINCT model_id FROM churn_risk_current WHERE app_id = '$app' AND prediction_source = '$source' ORDER BY 1",
+        "definition": "SELECT DISTINCT model_id FROM churn_risk_current WHERE app_id = '$app' AND prediction_source = '$source' ORDER BY 1",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "sort": 1
+      },
+      {
+        "name": "version",
+        "label": "Model version",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "query": "SELECT DISTINCT model_version FROM churn_risk_current WHERE app_id = '$app' AND model_id = '$model' AND prediction_source = '$source' ORDER BY 1",
+        "definition": "SELECT DISTINCT model_version FROM churn_risk_current WHERE app_id = '$app' AND model_id = '$model' AND prediction_source = '$source' ORDER BY 1",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "sort": 1
+      },
+      {
+        "name": "user",
+        "label": "Subscriber token (synthetic)",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "query": "SELECT md5(user_id) FROM churn_risk_current WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND prediction_source = '$source' ORDER BY churn_probability DESC LIMIT 200",
+        "definition": "SELECT md5(user_id) FROM churn_risk_current WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND prediction_source = '$source' ORDER BY churn_probability DESC LIMIT 200",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": true,
+        "sort": 0
+      }
+    ]
+  },
   "panels": [
     {
-      "id": 1, "type": "stat", "title": "Current churn probability (mean of latest per subscriber)",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 5},
-      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1, "decimals": 1}, "overrides": []},
-      "targets": [{"refId": "A", "format": "table", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT AVG(churn_probability) AS \"Mean current churn probability\", COUNT(*) AS \"Subscribers\" FROM churn_risk_current WHERE model_id = '$model'"}]
+      "id": 1,
+      "type": "stat",
+      "title": "Current churn probability (mean of latest per subscriber)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT AVG(churn_probability) AS \"Mean current churn probability\", COUNT(*) AS \"Subscribers\" FROM churn_risk_current WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND prediction_source = '$source'"
+        }
+      ]
     },
     {
-      "id": 2, "type": "stat", "title": "Expected next-renewal revenue at risk (not saved revenue)",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 5},
-      "fieldConfig": {"defaults": {"unit": "currencyUSD", "decimals": 2}, "overrides": []},
-      "targets": [{"refId": "A", "format": "table", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT SUM(expected_revenue_at_risk_usd) AS \"Revenue at risk ($)\" FROM churn_risk_current WHERE model_id = '$model'"}]
+      "id": 2,
+      "type": "stat",
+      "title": "Expected next-renewal revenue at risk (not saved revenue)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT SUM(expected_revenue_at_risk_usd) AS \"Revenue at risk ($)\" FROM churn_risk_current WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND prediction_source = '$source'"
+        }
+      ]
     },
     {
-      "id": 3, "type": "table", "title": "Current churn probability by subscriber (latest prediction)",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 10},
-      "fieldConfig": {"defaults": {}, "overrides": [
-        {"matcher": {"id": "byName", "options": "Churn probability"}, "properties": [{"id": "unit", "value": "percentunit"}, {"id": "decimals", "value": 1}]},
-        {"matcher": {"id": "byName", "options": "Change since previous"}, "properties": [{"id": "unit", "value": "percentunit"}, {"id": "decimals", "value": 1}]},
-        {"matcher": {"id": "byName", "options": "Revenue at risk ($)"}, "properties": [{"id": "unit", "value": "currencyUSD"}]}
-      ]},
-      "targets": [{"refId": "A", "format": "table", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT user_id AS \"Subscriber\", effective_at AS \"As of\", churn_probability AS \"Churn probability\", churn_probability_change AS \"Change since previous\", renewal_due_at AS \"Renewal due\", expected_revenue_at_risk_usd AS \"Revenue at risk ($)\" FROM churn_risk_current WHERE model_id = '$model' ORDER BY expected_revenue_at_risk_usd DESC NULLS LAST, churn_probability DESC LIMIT 50"}]
+      "id": 3,
+      "type": "table",
+      "title": "Current churn probability by subscriber (latest prediction)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Churn probability"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Change since previous"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Revenue at risk ($)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT md5(user_id) AS \"Subscriber token\", effective_at AS \"As of\", churn_probability AS \"Churn probability\", churn_probability_change AS \"Change since previous\", renewal_due_at AS \"Renewal due\", expected_revenue_at_risk_usd AS \"Revenue at risk ($)\" FROM churn_risk_current WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND prediction_source = '$source' ORDER BY expected_revenue_at_risk_usd DESC NULLS LAST, churn_probability DESC LIMIT 50"
+        }
+      ]
     },
     {
-      "id": 4, "type": "timeseries", "title": "Churn-risk trajectory (selected subscribers)",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 0, "y": 5, "w": 12, "h": 10},
-      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1, "custom": {"drawStyle": "line", "showPoints": "always", "pointSize": 5}}, "overrides": []},
-      "targets": [{"refId": "A", "format": "time_series", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT effective_at AS \"time\", user_id AS metric, churn_probability AS value FROM churn_risk_trajectory WHERE model_id = '$model' AND user_id IN ($user) AND $__timeFilter(effective_at) ORDER BY 1"}]
+      "id": 4,
+      "type": "timeseries",
+      "title": "Churn-risk trajectory (selected subscribers)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": {
+            "drawStyle": "line",
+            "showPoints": "always",
+            "pointSize": 5
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT effective_at AS \"time\", md5(user_id) AS metric, churn_probability AS value FROM churn_risk_trajectory WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND prediction_source = '$source' AND md5(user_id) IN (${user:sqlstring}) AND $__timeFilter(effective_at) ORDER BY 1"
+        }
+      ]
     },
     {
-      "id": 5, "type": "timeseries", "title": "Change in churn risk since the previous prediction (selected subscribers)",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 12, "y": 10, "w": 12, "h": 8},
-      "fieldConfig": {"defaults": {"unit": "percentunit", "custom": {"drawStyle": "bars", "fillOpacity": 60}}, "overrides": []},
-      "targets": [{"refId": "A", "format": "time_series", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT effective_at AS \"time\", user_id AS metric, churn_probability_change AS value FROM churn_risk_trajectory WHERE model_id = '$model' AND user_id IN ($user) AND churn_probability_change IS NOT NULL AND $__timeFilter(effective_at) ORDER BY 1"}]
+      "id": 5,
+      "type": "timeseries",
+      "title": "Change in churn risk since the previous prediction (selected subscribers)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT effective_at AS \"time\", md5(user_id) AS metric, churn_probability_change AS value FROM churn_risk_trajectory WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND prediction_source = '$source' AND md5(user_id) IN (${user:sqlstring}) AND churn_probability_change IS NOT NULL AND $__timeFilter(effective_at) ORDER BY 1"
+        }
+      ]
     },
     {
-      "id": 6, "type": "timeseries", "title": "Mean churn risk across subscribers (daily)",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 0, "y": 15, "w": 12, "h": 8},
-      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0}, "overrides": []},
-      "targets": [{"refId": "A", "format": "time_series", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT date_trunc('day', effective_at) AS \"time\", AVG(churn_probability) AS \"Mean churn probability\", SUM(expected_revenue_at_risk_usd) / NULLIF(COUNT(DISTINCT date_trunc('day', effective_at)), 0) AS \"Revenue at risk ($)\" FROM churn_risk_trajectory WHERE model_id = '$model' AND $__timeFilter(effective_at) GROUP BY 1 ORDER BY 1"}]
+      "id": 6,
+      "type": "timeseries",
+      "title": "Mean churn risk across subscribers (daily)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT date_trunc('day', effective_at) AS \"time\", AVG(churn_probability) AS \"Mean churn probability\", SUM(expected_revenue_at_risk_usd) / NULLIF(COUNT(DISTINCT date_trunc('day', effective_at)), 0) AS \"Revenue at risk ($)\" FROM churn_risk_trajectory WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND prediction_source = '$source' AND $__timeFilter(effective_at) GROUP BY 1 ORDER BY 1"
+        }
+      ]
     },
     {
-      "id": 7, "type": "table", "title": "Largest risk increases in the selected time range",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 12, "y": 18, "w": 12, "h": 8},
-      "fieldConfig": {"defaults": {}, "overrides": [
-        {"matcher": {"id": "byName", "options": "Previous"}, "properties": [{"id": "unit", "value": "percentunit"}, {"id": "decimals", "value": 1}]},
-        {"matcher": {"id": "byName", "options": "Now"}, "properties": [{"id": "unit", "value": "percentunit"}, {"id": "decimals", "value": 1}]},
-        {"matcher": {"id": "byName", "options": "Change"}, "properties": [{"id": "unit", "value": "percentunit"}, {"id": "decimals", "value": 1}]},
-        {"matcher": {"id": "byName", "options": "Revenue at risk ($)"}, "properties": [{"id": "unit", "value": "currencyUSD"}]}
-      ]},
-      "targets": [{"refId": "A", "format": "table", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT user_id AS \"Subscriber\", effective_at AS \"As of\", previous_churn_probability AS \"Previous\", churn_probability AS \"Now\", churn_probability_change AS \"Change\", expected_revenue_at_risk_usd AS \"Revenue at risk ($)\" FROM churn_risk_trajectory WHERE model_id = '$model' AND churn_probability_change > 0 AND $__timeFilter(effective_at) ORDER BY churn_probability_change DESC LIMIT 25"}]
+      "id": 7,
+      "type": "table",
+      "title": "Largest risk increases in the selected time range",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Previous"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Now"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Change"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Revenue at risk ($)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT md5(user_id) AS \"Subscriber token\", effective_at AS \"As of\", previous_churn_probability AS \"Previous\", churn_probability AS \"Now\", churn_probability_change AS \"Change\", expected_revenue_at_risk_usd AS \"Revenue at risk ($)\" FROM churn_risk_trajectory WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND prediction_source = '$source' AND churn_probability_change > 0 AND $__timeFilter(effective_at) ORDER BY churn_probability_change DESC LIMIT 25"
+        }
+      ]
     }
   ]
 }
