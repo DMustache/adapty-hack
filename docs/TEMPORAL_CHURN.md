@@ -104,6 +104,39 @@ Trial vs direct start was already a feature (`started_with_trial`), but in this 
 (weekly = trial, monthly = direct). **The deployed model is unchanged.** The features stay in `temporal_extended`,
 covered by tests on hand-made histories where they vary, so they can be re-evaluated on real data.
 
+**Round-2 candidates** (`python -m ml.temporal_churn.ablation_round2`), in the candidate set `temporal_round2`. Same
+rule as above. Placement, flow, acquisition channel and app version were already in the deployed model.
+
+| Group | CV folds improved | Holdout Brier gain (95% CI) | Helps |
+|---|---|---|---|
+| Switch-off timing (fraction of the billing period when auto-renew was switched off; fraction of the leaving window elapsed) | 2/3 | +0.00001 (−0.00002 to +0.00005) | no |
+| `ab_test` | 1/3 | −0.00003 (−0.00006 to +0.00000) | no |
+| First receipt's offer (identical to `started_with_trial` in this data) | 1/3 | −0.00002 (−0.00006 to +0.00002) | no |
+| Locale | 1/3 | −0.00003 (−0.00006 to +0.00000) | no |
+| Install hour + weekday (UTC; no user timezone in the data) | 1/3 | −0.00000 (−0.00004 to +0.00004) | no |
+| Days from install to first purchase | 0/3 | +0.00000 (−0.00004 to +0.00004) | no |
+| Cohort churn rate by acquisition channel (renewals resolved before the snapshot) | 0/3 | +0.00001 (−0.00003 to +0.00006) | no |
+| Cohort churn rate by country | 0/3 | −0.00004 (−0.00008 to −0.00001) | no (slightly worse) |
+| Cohort churn rate by paywall variant (`flow`) | 0/3 | −0.00000 (−0.00004 to +0.00004) | no |
+| All round-2 features | 0/3 | −0.00001 (−0.00006 to +0.00003) | no |
+
+**Ranking among subscribers whose auto-renew is still ON** (27,024 holdout snapshots, churn 6.8%). Here the deployed
+model's main signal, the switch-off, is absent:
+
+| Model | ROC-AUC (95% CI) | PR-AUC | Brier (constant) | Lost revenue in top 10% / 20% |
+|---|---|---|---|---|
+| **temporal (deployed)** | **0.640 (0.622–0.657)** | **0.103** | **0.06232** (0.06297) | 18.5% / 35.7% |
+| temporal + all round-2 features | 0.638 (0.617–0.656) | 0.103 | 0.06233 | 18.3% / 35.5% |
+| trained on auto-renew-ON snapshots only, all round-2 features | 0.637 (0.618–0.655) | 0.102 | 0.06232 | 18.2% / 35.5% |
+| temporal_behaviour (no auto-renew status) | 0.568 (0.541–0.597) | 0.083 | 0.06587 | 15.4% / 24.5% |
+| static | 0.545 (0.516–0.576) | 0.078 | 0.06684 | 10.8% / 24.3% |
+
+The deployed model still ranks ON subscribers clearly better than random. It also beats the models without
+auto-renew status (0.640 vs 0.568 / 0.545, non-overlapping CIs). Knowing the status lets it learn that **auto-renew
+still on as the renewal approaches means lower risk**, which a model mixing ON and OFF users can't separate. That
+model is also worse than a constant on Brier for ON users. Every individual round-2 candidate, the all-features
+variant and an ON-only model land at the same 0.64. Full table: `ml/temporal_churn/reports/ablation_round2.md`.
+
 **Reading the results honestly:**
 - The time-aware gain comes almost entirely from **auto-renew status over time**: seeing that a subscriber has switched
   it off, and since when.

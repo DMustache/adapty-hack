@@ -51,6 +51,24 @@ HISTORY_GROUPS = {
 HISTORY_BOOLEAN = ["first_renewal_after_offer"]
 HISTORY_FEATURES = [f for g in HISTORY_GROUPS.values() for f in g]
 
+# Round 2 candidates (ablation_round2.py). Already in the deployed set, so not repeated: placement, flow,
+# acquisition_channel, app_version. Install time is UTC (users.csv has no timezone). Cohort churn rates use only
+# renewals resolved at or before as_of_at, smoothed toward the overall rate with COHORT_PRIOR_WEIGHT pseudo-renewals.
+ROUND2_GROUPS = {
+    "switch_off_timing": ["auto_renew_off_period_fraction", "leaving_window_elapsed"],
+    "ab_test": ["ab_test"],
+    "first_offer": ["first_offer"],
+    "locale": ["locale"],
+    "install_time": ["install_hour_utc", "install_weekday_utc"],
+    "days_install_to_first_purchase": ["days_install_to_first_purchase"],
+    "cohort_churn_rate_channel": ["cohort_churn_rate_channel"],
+    "cohort_churn_rate_country": ["cohort_churn_rate_country"],
+    "cohort_churn_rate_paywall": ["cohort_churn_rate_paywall"],
+}
+ROUND2_CATEGORICAL = ["ab_test", "first_offer", "locale"]
+ROUND2_FEATURES = [f for g in ROUND2_GROUPS.values() for f in g]
+COHORT_PRIOR_WEIGHT = 20
+
 FEATURE_SETS = {
     # attributes known at sign-up only: one value per subscription period, whatever the date
     "static": STATIC_CATEGORICAL + STATIC_NUMERIC + STATIC_BOOLEAN,
@@ -63,8 +81,10 @@ FEATURE_SETS = {
 # candidate set: deployed temporal features + subscription-history features. Evaluated in ablation_history.py;
 # not deployed: none of the groups improved the model on this data (2026-11-08).
 FEATURE_SETS["temporal_extended"] = FEATURE_SETS["temporal"] + HISTORY_FEATURES
+# round-2 candidate set (ablation_round2.py); not deployed unless a group passes the ablation rule
+FEATURE_SETS["temporal_round2"] = FEATURE_SETS["temporal"] + ROUND2_FEATURES
 EVALUATED_MODELS = ("static", "temporal_behaviour", "temporal")   # trained/compared by train.py and ablation.py
-CATEGORICAL = set(STATIC_CATEGORICAL)
+CATEGORICAL = set(STATIC_CATEGORICAL + ROUND2_CATEGORICAL)
 BOOLEAN = set(STATIC_BOOLEAN + STATUS_BOOLEAN + HISTORY_BOOLEAN)
 
 
@@ -166,10 +186,55 @@ def build_snapshots(users: pd.DataFrame, tx: pd.DataFrame, cutoff: pd.Timestamp,
     s["days_since_install"] = (s["as_of_at"] - s["install_at"]) / day
     s = s.reset_index(drop=True)
     _add_history_features(s, users, tx)
+    _add_round2_features(s, users, tx, off)
     resolved = s["renewal_due_at"] <= cutoff - pd.Timedelta(days=OUTCOME_MARGIN_DAYS)
     s["churn"] = np.where(resolved, (~s["renewed"]).astype(float), np.nan)
-    keep = ["user_id", "seq", "as_of_at", "renewal_due_at", "churn"] + FEATURE_SETS["temporal_extended"]
+    keep = ["user_id", "seq", "as_of_at", "renewal_due_at", "churn"] + FEATURE_SETS["temporal_extended"] \
+        + ROUND2_FEATURES
     return s[keep].sort_values(["as_of_at", "user_id"]).reset_index(drop=True)
+
+
+def _add_round2_features(s: pd.DataFrame, users: pd.DataFrame, tx: pd.DataFrame, off: pd.Series) -> None:
+    day = pd.Timedelta(days=1)
+    off = off.to_numpy()
+    # (1) when in the billing period auto-renew was switched off, and how much of the remaining "leaving window"
+    # (switch-off -> renewal due) has elapsed; null until a switch-off has happened
+    period = (s["renewal_due_at"] - s["last_payment_at"]) / day
+    s["auto_renew_off_period_fraction"] = np.where(
+        off, (s["renew_status_changed_at"] - s["last_payment_at"]) / day / period, np.nan)
+    window = (s["renewal_due_at"] - s["renew_status_changed_at"]) / day
+    s["leaving_window_elapsed"] = np.where(
+        off, ((s["as_of_at"] - s["renew_status_changed_at"]) / day) / window.where(window > 0), np.nan)
+    # (2) acquisition context known at install / first purchase
+    u = users.set_index("user_id")
+    s["ab_test"] = s["user_id"].map(u["ab_test"]).fillna("none").astype(str)
+    s["locale"] = s["user_id"].map(u["locale"]).astype(str)
+    s["install_hour_utc"] = s["install_at"].dt.hour.astype(float)
+    s["install_weekday_utc"] = s["install_at"].dt.day_of_week.astype(float)
+    first = tx.sort_values(["user_id", "purchased_at", "seq"]).groupby("user_id").head(1).set_index("user_id")
+    s["first_offer"] = s["user_id"].map(first["offer"]).fillna("none").astype(str)
+    s["days_install_to_first_purchase"] = (s["user_id"].map(first["purchased_at"]) - s["install_at"]) / day
+    # (3) point-in-time cohort churn rates: renewal outcomes of weekly/monthly periods resolved at or before as_of_at
+    p = periods(tx).merge(users[["user_id", "acquisition_channel", "country", "flow"]], on="user_id")
+    ev = pd.DataFrame({"t": p["expires_at"], "churn": (~p["renewed"]).astype(float),
+                       "acquisition_channel": p["acquisition_channel"], "country": p["country"], "flow": p["flow"]})
+    ev = ev[ev["t"].notna()].sort_values("t")
+    ev["g_n"] = np.arange(1, len(ev) + 1, dtype=float)
+    ev["g_churn"] = ev["churn"].cumsum()
+    left = s[["as_of_at", "acquisition_channel", "country", "flow"]].reset_index().rename(columns={"index": "row"}) \
+        .sort_values("as_of_at")
+    glob = pd.merge_asof(left, ev[["t", "g_n", "g_churn"]], left_on="as_of_at", right_on="t",
+                         direction="backward").set_index("row").reindex(s.index)
+    prior = (glob["g_churn"] / glob["g_n"]).fillna(0.0)               # overall rate so far (0 before any outcome)
+    for col, name in (("acquisition_channel", "cohort_churn_rate_channel"), ("country", "cohort_churn_rate_country"),
+                      ("flow", "cohort_churn_rate_paywall")):
+        e = ev[["t", col, "churn"]].copy()
+        e["n"] = e.groupby(col).cumcount() + 1.0
+        e["c"] = e.groupby(col)["churn"].cumsum()
+        m = pd.merge_asof(left, e[["t", col, "n", "c"]], left_on="as_of_at", right_on="t", by=col,
+                          direction="backward").set_index("row").reindex(s.index)
+        n, c = m["n"].fillna(0.0), m["c"].fillna(0.0)
+        s[name] = (c + COHORT_PRIOR_WEIGHT * prior) / (n + COHORT_PRIOR_WEIGHT)
 
 
 def _events_up_to(s: pd.DataFrame, events: pd.DataFrame) -> tuple[pd.Series, pd.Series]:

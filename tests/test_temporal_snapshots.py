@@ -15,7 +15,7 @@ def _users(*ids):
         "user_id": list(ids), "platform": "iOS", "country": "US", "acquisition_channel": "organic",
         "onboarding_goal": "travel", "push_opt_in": "yes", "app_version": "3.6.0", "placement": "main",
         "flow": "main", "ai_edits_first_day": 3.0, "photos_imported": 10.0,
-        "install_at": T - 2 * DAY, "price_index": 1.0})
+        "install_at": T - 2 * DAY, "price_index": 1.0, "ab_test": None, "locale": "en_US"})
 
 
 def _tx(user, periods, **last):
@@ -95,7 +95,7 @@ def test_future_events_do_not_change_past_features():
     tx2.loc[tx2.user_id == "a", "renew_status_changed_at"] = T + 20 * DAY
     tx2.loc[tx2.user_id == "a", "billing_issue_detected_at"] = T + 25 * DAY
     alt = S.build_snapshots(users, tx2, cutoff=T + 60 * DAY)
-    feats = [f for f in S.FEATURE_SETS["temporal_extended"]]
+    feats = S.FEATURE_SETS["temporal_extended"] + S.ROUND2_FEATURES
     a = base[base.as_of_at <= pivot].set_index(["user_id", "as_of_at"])[feats]
     b = alt[alt.as_of_at <= pivot].set_index(["user_id", "as_of_at"])[feats]
     pd.testing.assert_frame_equal(a.sort_index(), b.sort_index())
@@ -163,9 +163,39 @@ def test_cancellation_reason_is_never_used():
     users, tx = _frames(_tx("a", 3, renew_status=False), _tx("b", 2))
     tx_a = tx.assign(cancellation_reason=None)
     tx_b = tx.assign(cancellation_reason="voluntarily_cancelled")
-    feats = S.FEATURE_SETS["temporal_extended"]
+    feats = S.FEATURE_SETS["temporal_extended"] + S.ROUND2_FEATURES
     pd.testing.assert_frame_equal(S.build_snapshots(users, tx_a, T + 60 * DAY)[feats],
                                   S.build_snapshots(users, tx_b, T + 60 * DAY)[feats])
+
+
+def test_switch_off_timing_within_period():
+    change = T + 3.5 * DAY                                    # half-way through a 7-day period
+    users, tx = _frames(_tx("a", 1, renew_status=False, renew_status_changed_at=change))
+    s = S.build_snapshots(users, tx, cutoff=T + 30 * DAY).set_index("as_of_at")
+    assert np.isnan(s.loc[T + 3 * DAY, "auto_renew_off_period_fraction"])     # not switched off yet
+    assert s.loc[T + 4 * DAY, "auto_renew_off_period_fraction"] == pytest.approx(0.5)
+    # leaving window = 3.5 days (switch-off -> renewal due); at day 6, 2.5 days of it have passed
+    assert s.loc[T + 6 * DAY, "leaving_window_elapsed"] == pytest.approx(2.5 / 3.5)
+
+
+def test_cohort_rate_uses_only_renewals_resolved_before_the_snapshot():
+    # b churns at its renewal on day 7 (same channel/country/paywall as a); a's later snapshots may see it, earlier ones not
+    users, tx = _frames(_tx("a", 3), _tx("b", 1, renew_status=False))
+    s = S.build_snapshots(users, tx, cutoff=T + 60 * DAY)
+    a = s[s.user_id == "a"].set_index("as_of_at")
+    before, after = a.loc[T + 6 * DAY], a.loc[T + 7 * DAY]
+    assert before["cohort_churn_rate_channel"] == 0.0         # no resolved renewal yet
+    # at day 7: a renewed (0) and b churned (1) -> 1 churn / 2 renewals; prior = overall rate so far (also 1/2)
+    assert after["cohort_churn_rate_channel"] == pytest.approx(0.5)
+    assert after["cohort_churn_rate_country"] == after["cohort_churn_rate_paywall"] == after["cohort_churn_rate_channel"]
+
+
+def test_install_and_first_purchase_features():
+    users, tx = _frames(_tx("a", 1))
+    s = S.build_snapshots(users, tx, cutoff=T + 30 * DAY)
+    assert (s["days_install_to_first_purchase"] == 2.0).all()
+    assert (s["install_hour_utc"] == 0).all() and (s["install_weekday_utc"] == (T - 2 * DAY).day_of_week).all()
+    assert (s["ab_test"] == "none").all() and (s["first_offer"] == "none").all() and (s["locale"] == "en_US").all()
 
 
 def test_feature_record_is_json_ready():
