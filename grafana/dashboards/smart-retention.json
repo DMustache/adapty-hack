@@ -1,52 +1,234 @@
 {
   "id": null,
   "uid": "smart-retention",
-  "title": "Smart Retention Offers — Scenario Experiment (Synthetic)",
-  "tags": ["adapty", "retention", "scenario", "mock"],
-  "timezone": "utc", "schemaVersion": 39, "version": 2, "editable": false,
-  "refresh": "15s", "time": {"from": "now-7d", "to": "now"},
-  "annotations": {"list": []},
+  "title": "4. Campaign Tracking — Offline",
+  "description": "Synthetic profile composition; no verified campaign exposure, save rate, ROI or uplift.",
+  "tags": [
+    "adapty",
+    "synthetic",
+    "offline",
+    "retention"
+  ],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "time": {
+    "from": "2026-07-01T00:00:00Z",
+    "to": "2026-11-08T00:00:00Z"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "platform",
+        "label": "Platform",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(platform, '') AS __text, COALESCE(platform, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "country",
+        "label": "Country",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(country, '') AS __text, COALESCE(country, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "channel",
+        "label": "Channel",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(acquisition_channel, '') AS __text, COALESCE(acquisition_channel, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "goal",
+        "label": "Goal",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(onboarding_goal, '') AS __text, COALESCE(onboarding_goal, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "flow",
+        "label": "Flow",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(flow, '') AS __text, COALESCE(flow, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "test",
+        "label": "Test",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(ab_test, '') AS __text, COALESCE(ab_test, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      }
+    ]
+  },
   "panels": [
     {
-      "id": 1, "type": "timeseries", "title": "Mean stored mock churn probability",
-      "description": "Synthetic fixture predictions only; this is not model validation. UTC prediction time.",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
-      "fieldConfig": {"defaults": {"min": 0, "max": 1}, "overrides": []},
-      "targets": [{"refId": "A", "format": "time_series", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT date_trunc('minute', predicted_at) AS \"time\", AVG(churn_probability) AS \"Mean mock churn probability\" FROM churn_predictions WHERE prediction_source = 'mock' AND $__timeFilter(predicted_at) GROUP BY 1 ORDER BY 1"}]
+      "id": 1,
+      "type": "table",
+      "title": "Placement and flow composition",
+      "description": "Recorded profile fields; not verified views or exposures.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT u.placement AS \"Placement\", u.flow AS \"Flow\", COUNT(*)::integer AS \"Users\" FROM offline_users u WHERE $__timeFilter(u.install_at) AND u.platform LIKE '$platform' AND u.country LIKE '$country' AND u.acquisition_channel LIKE '$channel' AND u.onboarding_goal LIKE '$goal' AND u.flow LIKE '$flow' AND COALESCE(u.ab_test, '') LIKE '$test' GROUP BY 1,2 ORDER BY 3 DESC"
+        }
+      ]
     },
     {
-      "id": 2, "type": "timeseries", "title": "Scenario maximum face-value discount exposure vs budget",
-      "description": "Stored maximum allocated discount exposure and stated budget for each proposal, in USD. Neither is realized cost. UTC proposal time.",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
-      "targets": [{"refId": "A", "format": "time_series", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT created_at AS \"time\", max_exposure_usd::double precision AS \"Maximum face-value exposure (USD)\", budget_usd::double precision AS \"Scenario budget (USD)\" FROM retention_experiments WHERE $__timeFilter(created_at) ORDER BY 1"}]
+      "id": 2,
+      "type": "table",
+      "title": "Recorded A/B test names",
+      "description": "No variant assignment in this archive.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT COALESCE(u.ab_test,'(none)') AS \"Test name\", COUNT(*)::integer AS \"Users\" FROM offline_users u WHERE $__timeFilter(u.install_at) AND u.platform LIKE '$platform' AND u.country LIKE '$country' AND u.acquisition_channel LIKE '$channel' AND u.onboarding_goal LIKE '$goal' AND u.flow LIKE '$flow' AND COALESCE(u.ab_test, '') LIKE '$test' GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ]
     },
     {
-      "id": 3, "type": "barchart", "title": "Scenario arm assignments (control, offer, no offer)",
-      "description": "Counts assignments across stored proposals in the selected UTC time range. A user may appear in more than one proposal; counts are not unique users or observed treatment groups.",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
-      "targets": [{"refId": "A", "format": "table", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT assignment->>'arm' AS \"Arm\", COUNT(*)::integer AS \"Proposed assignments\" FROM retention_experiments e CROSS JOIN LATERAL jsonb_array_elements(e.payload->'assignments') assignment WHERE $__timeFilter(e.created_at) GROUP BY 1 ORDER BY 1"}]
+      "id": 3,
+      "type": "table",
+      "title": "Transaction users by recorded test",
+      "description": "Descriptive association. Not test conversion, save rate or treatment effect.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT COALESCE(u.ab_test,'(none)') AS \"Test name\", COUNT(DISTINCT u.user_id)::integer AS \"Users\", COUNT(DISTINCT t.user_id)::integer AS \"Users with transaction\" FROM offline_users u LEFT JOIN offline_transactions t ON t.user_id=u.user_id WHERE $__timeFilter(u.install_at) AND u.platform LIKE '$platform' AND u.country LIKE '$country' AND u.acquisition_channel LIKE '$channel' AND u.onboarding_goal LIKE '$goal' AND u.flow LIKE '$flow' AND COALESCE(u.ab_test, '') LIKE '$test' GROUP BY 1 ORDER BY 1"
+        }
+      ]
     },
     {
-      "id": 4, "type": "barchart", "title": "Scenario mean break-even hurdle by offer arm (pp)",
-      "description": "Mean stored algebraic increase in renewal probability required to break even on immediate gross renewal revenue, in percentage points. This is not measured or estimated treatment uplift.",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
-      "targets": [{"refId": "A", "format": "table", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT assignment->>'arm' AS \"Offer arm\", ROUND((100 * AVG((assignment->>'required_absolute_uplift')::numeric)), 2)::double precision AS \"Mean required uplift (pp)\" FROM retention_experiments e CROSS JOIN LATERAL jsonb_array_elements(e.payload->'assignments') assignment WHERE $__timeFilter(e.created_at) AND assignment->>'arm' LIKE 'discount_%' AND assignment->>'required_absolute_uplift' IS NOT NULL GROUP BY 1 ORDER BY 1"}]
-    },
-    {
-      "id": 5, "type": "timeseries", "title": "Scenario baseline revenue at risk (not savings)",
-      "description": "Stored baseline estimate from each experiment proposal, in USD. No discount outcome or savings is implied. UTC proposal time.",
-      "datasource": {"type": "postgres", "uid": "adapty-pg"},
-      "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
-      "targets": [{"refId": "A", "format": "time_series", "rawQuery": true, "editorMode": "code",
-        "rawSql": "SELECT created_at AS \"time\", (payload->>'expected_baseline_revenue_at_risk_usd')::double precision AS \"Baseline revenue at risk (USD)\" FROM retention_experiments WHERE $__timeFilter(created_at) ORDER BY 1"}]
+      "id": 4,
+      "type": "table",
+      "title": "Outcome measurement status",
+      "description": "The offline A/B label is insufficient for causal measurement.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT 'Unavailable' AS \"Measured treatment effect\", 'Need verified variant assignment, exposure, mature outcome and control' AS \"Reason\""
+        }
+      ]
     }
   ]
 }
