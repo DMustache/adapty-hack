@@ -138,6 +138,7 @@ async def predict(request: ChurnPredictionRequest):
     as_of_at, renewal_due_at, renewal_price_usd = (
         request.as_of_at, request.renewal_due_at, request.renewal_price_usd
     )
+    plan_type = request.plan_type
     if request.model_id == "lumen-temporal-catboost":
         context = request.context
         if set(context) - {"as_of_at", "renewal_due_at", "feature_source_ref"}:
@@ -150,6 +151,9 @@ async def predict(request: ChurnPredictionRequest):
         except (AttributeError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=422, detail="Invalid temporal context time") from exc
         renewal_price_usd = request.features["renewal_price_usd"]
+        plan_type = request.features["plan"]
+        if request.plan_type is not None and request.plan_type != plan_type:
+            raise HTTPException(status_code=422, detail="Conflicting billing plans")
         if request.renewal_price_usd is not None and request.renewal_price_usd != renewal_price_usd:
             raise HTTPException(status_code=422, detail="Conflicting renewal prices")
         if as_of_at is None or renewal_due_at is None or as_of_at.tzinfo is None or renewal_due_at.tzinfo is None:
@@ -174,6 +178,7 @@ async def predict(request: ChurnPredictionRequest):
         churn_probability=float(probability),
         as_of_at=as_of_at, renewal_due_at=renewal_due_at,
         renewal_price_usd=renewal_price_usd,
+        plan_type=plan_type,
     )
     await forward_to_analytics("/v1/ingest/predictions", result.model_dump(mode="json"))
     return result

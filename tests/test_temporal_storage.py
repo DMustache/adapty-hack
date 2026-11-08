@@ -77,6 +77,7 @@ class FakeDB:
                 "request_id", "app_id", "user_id", "model_id", "model_version",
                 "prediction_source", "renewal_horizon_days", "churn_probability",
                 "as_of_at", "renewal_due_at", "renewal_price_usd",
+                "plan_type",
             )) if stored else None)
 
     def fetchone(self):
@@ -109,12 +110,14 @@ def test_temporal_snapshot_retry_is_immutable(monkeypatch):
     monkeypatch.setattr(analytics, "db_connect", lambda: db)
     client = TestClient(analytics.app)
     payload = {**BASE_RESULT, "as_of_at": "2026-10-20T08:00:00Z",
-               "renewal_due_at": "2026-10-23T08:00:00Z", "renewal_price_usd": 6.99}
+               "renewal_due_at": "2026-10-23T08:00:00Z", "renewal_price_usd": 6.99,
+               "plan_type": "weekly"}
     assert client.post("/v1/ingest/predictions", json=payload).json()["status"] == "stored"
     assert client.post("/v1/ingest/predictions", json=payload).json()["status"] == "duplicate"
     for field, changed in (("as_of_at", "2026-10-21T08:00:00Z"),
                            ("renewal_due_at", "2026-10-24T08:00:00Z"),
                            ("renewal_price_usd", 7.99),
+                           ("plan_type", "monthly"),
                            ("model_version", "1.0.1")):
         response = client.post("/v1/ingest/predictions", json={**payload, field: changed})
         assert response.status_code == 409, field

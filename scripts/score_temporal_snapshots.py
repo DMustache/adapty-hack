@@ -51,6 +51,7 @@ def build_requests(snaps: pd.DataFrame, subscribers: int, days: int) -> list[dic
             "renewal_horizon_days": max(1, min(365, math.ceil(days_left))),
             "context": {"as_of_at": cutoff, "renewal_due_at": due,
                         "feature_source_ref": "synthetic-offline-replay"},
+            "plan_type": r.plan,
             "features": S.feature_record(rec, "temporal"),
         })
     return out
