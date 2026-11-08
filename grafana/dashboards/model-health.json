@@ -2,7 +2,7 @@
   "id": null,
   "uid": "model-health",
   "title": "1. Data and Model Health — Offline",
-  "description": "Synthetic source readiness; model performance is unavailable until model outputs and mature labels exist.",
+  "description": "Offline source inventory and stored prediction provenance. This dashboard does not check service health or model quality.",
   "tags": [
     "adapty",
     "synthetic",
@@ -134,7 +134,7 @@
       "id": 1,
       "type": "table",
       "title": "Offline source rows",
-      "description": "Synthetic source inventory. Model has not been delivered.",
+      "description": "Synthetic offline source inventory.",
       "datasource": {
         "type": "postgres",
         "uid": "adapty-pg"
@@ -158,8 +158,8 @@
     {
       "id": 2,
       "type": "table",
-      "title": "Model status",
-      "description": "An external-looking fixture does not establish a delivered model.",
+      "title": "Stored prediction sources",
+      "description": "Stored synthetic predictions by source, model and version. These rows do not verify that the inference service is running or approved for real customers.",
       "datasource": {
         "type": "postgres",
         "uid": "adapty-pg"
@@ -176,7 +176,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT 'No external churn model loaded' AS \"Status\", 'Quality metrics require versioned predictions and mature outcomes' AS \"Reason\""
+          "rawSql": "SELECT prediction_source AS \"Source\", model_id AS \"Model ID\", model_version AS \"Version\", COUNT(*) AS \"Stored predictions\" FROM churn_predictions GROUP BY prediction_source, model_id, model_version UNION ALL SELECT 'external' AS \"Source\", 'No external predictions stored' AS \"Model ID\", NULL AS \"Version\", 0 AS \"Stored predictions\" WHERE NOT EXISTS (SELECT 1 FROM churn_predictions WHERE prediction_source = 'external') ORDER BY 1, 2, 3"
         }
       ]
     },
