@@ -4,6 +4,14 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+def _check_temporal(as_of_at: datetime | None, renewal_due_at: datetime | None) -> None:
+    for name, value in (("as_of_at", as_of_at), ("renewal_due_at", renewal_due_at)):
+        if value is not None and value.tzinfo is None:
+            raise ValueError(f"{name} must include a timezone (UTC)")
+    if as_of_at is not None and renewal_due_at is not None and renewal_due_at < as_of_at:
+        raise ValueError("renewal_due_at must not be before as_of_at")
+
+
 class ChurnPredictionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: Literal["1.0"] = "1.0"
@@ -14,6 +22,16 @@ class ChurnPredictionRequest(BaseModel):
     renewal_horizon_days: int = Field(ge=1, le=365)
     context: dict[str, Any] = Field(default_factory=dict)
     features: dict[str, Any] = Field(default_factory=dict)
+    # Temporal fields (optional; omitted by older clients). as_of_at = the instant the features describe;
+    # renewal_due_at = the next eligible renewal event; renewal_price_usd = its full price (for revenue at risk).
+    as_of_at: datetime | None = None
+    renewal_due_at: datetime | None = None
+    renewal_price_usd: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def validate_temporal(self):
+        _check_temporal(self.as_of_at, self.renewal_due_at)
+        return self
 
 
 class ChurnPredictionResult(BaseModel):
@@ -29,6 +47,14 @@ class ChurnPredictionResult(BaseModel):
     predicted_at: datetime
     renewal_horizon_days: int
     churn_probability: float = Field(ge=0, le=1, allow_inf_nan=False)
+    as_of_at: datetime | None = None
+    renewal_due_at: datetime | None = None
+    renewal_price_usd: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def validate_temporal(self):
+        _check_temporal(self.as_of_at, self.renewal_due_at)
+        return self
 
 
 class RetentionCandidate(BaseModel):

@@ -5,5 +5,6 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 COPY shared /app/shared
 COPY services/__init__.py /app/services/__init__.py
 COPY services/inference /app/services/inference
+COPY contracts/schemas/approved-cohort.schema.json contracts/schemas/profile-sync.schema.json contracts/schemas/draft-test.schema.json /app/contracts/schemas/
 EXPOSE 8000
 CMD ["uvicorn", "services.inference.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

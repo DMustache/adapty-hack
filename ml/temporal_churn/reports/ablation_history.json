@@ -1,0 +1,151 @@
+{
+ "base": {
+  "features": "deployed temporal set",
+  "fold_brier": [
+   0.06646758800098003,
+   0.06632211309570124,
+   0.06790821459392732
+  ],
+  "test_brier": 0.060107658707638865,
+  "test_pr_auc": 0.5178365488859857
+ },
+ "auto_renew_toggles": {
+  "features": [
+   "auto_renew_toggles",
+   "days_since_auto_renew_change"
+  ],
+  "varying_in_data": [
+   "auto_renew_toggles",
+   "days_since_auto_renew_change"
+  ],
+  "fold_brier": [
+   0.06647853466949595,
+   0.0665458954854941,
+   0.06800774715366431
+  ],
+  "folds_improved": "0/3",
+  "test_brier": 0.06012065013098516,
+  "test_brier_gain": -1.2991423346295108e-05,
+  "ci95": [
+   -4.781056237451419e-05,
+   2.247890532667077e-05
+  ],
+  "test_pr_auc": 0.5167296541702521,
+  "helps": false
+ },
+ "plan_changes": {
+  "features": [
+   "plan_changes"
+  ],
+  "varying_in_data": [],
+  "fold_brier": [
+   0.06646758800098003,
+   0.06632211309570124,
+   0.06790821459392732
+  ],
+  "folds_improved": "0/3",
+  "test_brier": 0.060107658707638865,
+  "test_brier_gain": 0.0,
+  "ci95": [
+   0.0,
+   0.0
+  ],
+  "test_pr_auc": 0.5178365488859857,
+  "helps": false
+ },
+ "first_full_price_renewal_after_offer": {
+  "features": [
+   "first_renewal_after_offer",
+   "paid_periods_since_offer"
+  ],
+  "varying_in_data": [
+   "first_renewal_after_offer",
+   "paid_periods_since_offer"
+  ],
+  "fold_brier": [
+   0.06652819659302311,
+   0.06657226040260104,
+   0.06791479779095431
+  ],
+  "folds_improved": "0/3",
+  "test_brier": 0.06010107443992246,
+  "test_brier_gain": 6.584267716398199e-06,
+  "ci95": [
+   -3.858283825383926e-05,
+   5.000750265309577e-05
+  ],
+  "test_pr_auc": 0.5181700444977342,
+  "helps": false
+ },
+ "price_vs_country_median": {
+  "features": [
+   "price_vs_country_median"
+  ],
+  "varying_in_data": [],
+  "fold_brier": [
+   0.06646758800098003,
+   0.06632211309570124,
+   0.06790821459392732
+  ],
+  "folds_improved": "0/3",
+  "test_brier": 0.060107658707638865,
+  "test_brier_gain": 0.0,
+  "ci95": [
+   0.0,
+   0.0
+  ],
+  "test_pr_auc": 0.5178365488859857,
+  "helps": false
+ },
+ "prior_refunds": {
+  "features": [
+   "prior_refunds"
+  ],
+  "varying_in_data": [],
+  "fold_brier": [
+   0.06646758800098003,
+   0.06632211309570124,
+   0.06790821459392732
+  ],
+  "folds_improved": "0/3",
+  "test_brier": 0.060107658707638865,
+  "test_brier_gain": 0.0,
+  "ci95": [
+   0.0,
+   0.0
+  ],
+  "test_pr_auc": 0.5178365488859857,
+  "helps": false
+ },
+ "all_history_features": {
+  "features": [
+   "auto_renew_toggles",
+   "days_since_auto_renew_change",
+   "plan_changes",
+   "first_renewal_after_offer",
+   "paid_periods_since_offer",
+   "price_vs_country_median",
+   "prior_refunds"
+  ],
+  "varying_in_data": [
+   "auto_renew_toggles",
+   "days_since_auto_renew_change",
+   "first_renewal_after_offer",
+   "paid_periods_since_offer"
+  ],
+  "fold_brier": [
+   0.06648796017300257,
+   0.0665690150888862,
+   0.06787882537155118
+  ],
+  "folds_improved": "1/3",
+  "test_brier": 0.06011806670022223,
+  "test_brier_gain": -1.0407992583360211e-05,
+  "ci95": [
+   -4.337259223330457e-05,
+   2.1070745342059732e-05
+  ],
+  "test_pr_auc": 0.5179578839251364,
+  "helps": false
+ }
+}

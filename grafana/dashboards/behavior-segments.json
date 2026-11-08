@@ -1,0 +1,380 @@
+{
+  "id": null,
+  "uid": "behavior-segments",
+  "title": "3. Behavior and Segments — Offline",
+  "description": "Compare two client-defined segments in synthetic historical profiles. Groups may overlap; A/B test names are not verified variant assignments.",
+  "tags": [
+    "adapty",
+    "synthetic",
+    "offline",
+    "retention"
+  ],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 3,
+  "refresh": "",
+  "time": {
+    "from": "2026-07-01T00:00:00Z",
+    "to": "2026-11-08T00:00:00Z"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "a_platform",
+        "label": "Group A · Platform",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT platform AS __text, platform AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "a_country",
+        "label": "Group A · Country",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT country AS __text, country AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "a_channel",
+        "label": "Group A · Channel",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT acquisition_channel AS __text, acquisition_channel AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "a_goal",
+        "label": "Group A · Goal",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT onboarding_goal AS __text, onboarding_goal AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "a_flow",
+        "label": "Group A · Flow",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT flow AS __text, flow AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "a_test",
+        "label": "Group A · Test name",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT '(No test)' AS __text, '__no_test__' AS __value UNION ALL SELECT DISTINCT ab_test AS __text, ab_test AS __value FROM offline_users WHERE NULLIF(ab_test, '') IS NOT NULL) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "b_platform",
+        "label": "Group B · Platform",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT platform AS __text, platform AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "b_country",
+        "label": "Group B · Country",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT country AS __text, country AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "b_channel",
+        "label": "Group B · Channel",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT acquisition_channel AS __text, acquisition_channel AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "b_goal",
+        "label": "Group B · Goal",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT onboarding_goal AS __text, onboarding_goal AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "b_flow",
+        "label": "Group B · Flow",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT flow AS __text, flow AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      },
+      {
+        "name": "b_test",
+        "label": "Group B · Test name",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT '(No test)' AS __text, '__no_test__' AS __value UNION ALL SELECT DISTINCT ab_test AS __text, ab_test AS __value FROM offline_users WHERE NULLIF(ab_test, '') IS NOT NULL) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "__all__"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 10,
+      "type": "table",
+      "title": "Group A vs B — first-day behavior",
+      "description": "Synthetic offline profiles. The groups may overlap; these are selected segments, not verified experiment variants. Empty groups have no average or share.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 18,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT g.group_name AS \"Group\", COUNT(u.user_id)::integer AS \"Users\", ROUND(AVG(u.ai_edits_first_day), 2)::double precision AS \"Mean first-day edits\", ROUND(AVG(u.photos_imported), 2)::double precision AS \"Mean photos imported\", COUNT(u.user_id) FILTER (WHERE u.push_opt_in = 'yes')::integer AS \"Push opt-in users\", ROUND(100.0 * COUNT(u.user_id) FILTER (WHERE u.push_opt_in = 'yes') / NULLIF(COUNT(u.user_id), 0), 2)::double precision AS \"Push opt-in share (%)\" FROM (VALUES ('A'), ('B')) AS g(group_name) LEFT JOIN offline_users u ON (g.group_name = 'A' AND $__timeFilter(u.install_at) AND (${a_platform:sqlstring} = '__all__' OR u.platform = ${a_platform:sqlstring}) AND (${a_country:sqlstring} = '__all__' OR u.country = ${a_country:sqlstring}) AND (${a_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${a_channel:sqlstring}) AND (${a_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${a_goal:sqlstring}) AND (${a_flow:sqlstring} = '__all__' OR u.flow = ${a_flow:sqlstring}) AND (${a_test:sqlstring} = '__all__' OR (${a_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${a_test:sqlstring})) OR (g.group_name = 'B' AND $__timeFilter(u.install_at) AND (${b_platform:sqlstring} = '__all__' OR u.platform = ${b_platform:sqlstring}) AND (${b_country:sqlstring} = '__all__' OR u.country = ${b_country:sqlstring}) AND (${b_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${b_channel:sqlstring}) AND (${b_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${b_goal:sqlstring}) AND (${b_flow:sqlstring} = '__all__' OR u.flow = ${b_flow:sqlstring}) AND (${b_test:sqlstring} = '__all__' OR (${b_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${b_test:sqlstring})) GROUP BY g.group_name ORDER BY g.group_name"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "table",
+      "title": "Users in both groups",
+      "description": "Distinct synthetic users who match both filter sets in the shared UTC install range.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT COUNT(*)::integer AS \"Users in both groups\" FROM offline_users u WHERE $__timeFilter(u.install_at) AND (${a_platform:sqlstring} = '__all__' OR u.platform = ${a_platform:sqlstring}) AND (${a_country:sqlstring} = '__all__' OR u.country = ${a_country:sqlstring}) AND (${a_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${a_channel:sqlstring}) AND (${a_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${a_goal:sqlstring}) AND (${a_flow:sqlstring} = '__all__' OR u.flow = ${a_flow:sqlstring}) AND (${a_test:sqlstring} = '__all__' OR (${a_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${a_test:sqlstring}) AND $__timeFilter(u.install_at) AND (${b_platform:sqlstring} = '__all__' OR u.platform = ${b_platform:sqlstring}) AND (${b_country:sqlstring} = '__all__' OR u.country = ${b_country:sqlstring}) AND (${b_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${b_channel:sqlstring}) AND (${b_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${b_goal:sqlstring}) AND (${b_flow:sqlstring} = '__all__' OR u.flow = ${b_flow:sqlstring}) AND (${b_test:sqlstring} = '__all__' OR (${b_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${b_test:sqlstring})"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "type": "table",
+      "title": "First-day edits by onboarding goal",
+      "description": "Association, not a cause of churn. Group A and B are independently filtered and may overlap; Group users is the full selected group size.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT group_name AS \"Group\", onboarding_goal AS \"Goal\", COUNT(*)::integer AS \"Users\", SUM(COUNT(*)) OVER (PARTITION BY group_name)::integer AS \"Group users\", ROUND(AVG(ai_edits_first_day), 2)::double precision AS \"Mean first-day edits\" FROM (SELECT 'A' AS group_name, u.user_id, u.onboarding_goal, u.ai_edits_first_day, u.photos_imported, u.push_opt_in, u.acquisition_channel, u.platform, u.country FROM offline_users u WHERE $__timeFilter(u.install_at) AND (${a_platform:sqlstring} = '__all__' OR u.platform = ${a_platform:sqlstring}) AND (${a_country:sqlstring} = '__all__' OR u.country = ${a_country:sqlstring}) AND (${a_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${a_channel:sqlstring}) AND (${a_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${a_goal:sqlstring}) AND (${a_flow:sqlstring} = '__all__' OR u.flow = ${a_flow:sqlstring}) AND (${a_test:sqlstring} = '__all__' OR (${a_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${a_test:sqlstring}) UNION ALL SELECT 'B' AS group_name, u.user_id, u.onboarding_goal, u.ai_edits_first_day, u.photos_imported, u.push_opt_in, u.acquisition_channel, u.platform, u.country FROM offline_users u WHERE $__timeFilter(u.install_at) AND (${b_platform:sqlstring} = '__all__' OR u.platform = ${b_platform:sqlstring}) AND (${b_country:sqlstring} = '__all__' OR u.country = ${b_country:sqlstring}) AND (${b_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${b_channel:sqlstring}) AND (${b_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${b_goal:sqlstring}) AND (${b_flow:sqlstring} = '__all__' OR u.flow = ${b_flow:sqlstring}) AND (${b_test:sqlstring} = '__all__' OR (${b_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${b_test:sqlstring})) cohorts GROUP BY group_name, onboarding_goal ORDER BY group_name, onboarding_goal"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Imported photos and push preference",
+      "description": "First-day behavior in synthetic profiles. Group A and B are independently filtered and may overlap; Group users is the full selected group size.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT group_name AS \"Group\", push_opt_in AS \"Push opt-in\", COUNT(*)::integer AS \"Users\", SUM(COUNT(*)) OVER (PARTITION BY group_name)::integer AS \"Group users\", ROUND(AVG(photos_imported), 2)::double precision AS \"Mean photos imported\" FROM (SELECT 'A' AS group_name, u.user_id, u.onboarding_goal, u.ai_edits_first_day, u.photos_imported, u.push_opt_in, u.acquisition_channel, u.platform, u.country FROM offline_users u WHERE $__timeFilter(u.install_at) AND (${a_platform:sqlstring} = '__all__' OR u.platform = ${a_platform:sqlstring}) AND (${a_country:sqlstring} = '__all__' OR u.country = ${a_country:sqlstring}) AND (${a_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${a_channel:sqlstring}) AND (${a_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${a_goal:sqlstring}) AND (${a_flow:sqlstring} = '__all__' OR u.flow = ${a_flow:sqlstring}) AND (${a_test:sqlstring} = '__all__' OR (${a_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${a_test:sqlstring}) UNION ALL SELECT 'B' AS group_name, u.user_id, u.onboarding_goal, u.ai_edits_first_day, u.photos_imported, u.push_opt_in, u.acquisition_channel, u.platform, u.country FROM offline_users u WHERE $__timeFilter(u.install_at) AND (${b_platform:sqlstring} = '__all__' OR u.platform = ${b_platform:sqlstring}) AND (${b_country:sqlstring} = '__all__' OR u.country = ${b_country:sqlstring}) AND (${b_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${b_channel:sqlstring}) AND (${b_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${b_goal:sqlstring}) AND (${b_flow:sqlstring} = '__all__' OR u.flow = ${b_flow:sqlstring}) AND (${b_test:sqlstring} = '__all__' OR (${b_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${b_test:sqlstring})) cohorts GROUP BY group_name, push_opt_in ORDER BY group_name, push_opt_in"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "First-day edit bands by channel",
+      "description": "Group size shown; bands are descriptive, not model thresholds. Group A and B are independently filtered and may overlap; Group users is the full selected group size.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT group_name AS \"Group\", acquisition_channel AS \"Channel\", CASE WHEN ai_edits_first_day = 0 THEN '0' WHEN ai_edits_first_day < 4 THEN '1-3' WHEN ai_edits_first_day < 8 THEN '4-7' ELSE '8+' END AS \"First-day edits\", COUNT(*)::integer AS \"Users\", SUM(COUNT(*)) OVER (PARTITION BY group_name)::integer AS \"Group users\" FROM (SELECT 'A' AS group_name, u.user_id, u.onboarding_goal, u.ai_edits_first_day, u.photos_imported, u.push_opt_in, u.acquisition_channel, u.platform, u.country FROM offline_users u WHERE $__timeFilter(u.install_at) AND (${a_platform:sqlstring} = '__all__' OR u.platform = ${a_platform:sqlstring}) AND (${a_country:sqlstring} = '__all__' OR u.country = ${a_country:sqlstring}) AND (${a_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${a_channel:sqlstring}) AND (${a_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${a_goal:sqlstring}) AND (${a_flow:sqlstring} = '__all__' OR u.flow = ${a_flow:sqlstring}) AND (${a_test:sqlstring} = '__all__' OR (${a_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${a_test:sqlstring}) UNION ALL SELECT 'B' AS group_name, u.user_id, u.onboarding_goal, u.ai_edits_first_day, u.photos_imported, u.push_opt_in, u.acquisition_channel, u.platform, u.country FROM offline_users u WHERE $__timeFilter(u.install_at) AND (${b_platform:sqlstring} = '__all__' OR u.platform = ${b_platform:sqlstring}) AND (${b_country:sqlstring} = '__all__' OR u.country = ${b_country:sqlstring}) AND (${b_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${b_channel:sqlstring}) AND (${b_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${b_goal:sqlstring}) AND (${b_flow:sqlstring} = '__all__' OR u.flow = ${b_flow:sqlstring}) AND (${b_test:sqlstring} = '__all__' OR (${b_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${b_test:sqlstring})) cohorts GROUP BY group_name, acquisition_channel, \"First-day edits\" ORDER BY group_name, acquisition_channel, \"First-day edits\""
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Cohort composition by platform and country",
+      "description": "No feature importance or SHAP until the external owner supplies explanations. Group A and B are independently filtered and may overlap; Group users is the full selected group size.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT group_name AS \"Group\", platform AS \"Platform\", country AS \"Country\", COUNT(*)::integer AS \"Users\", SUM(COUNT(*)) OVER (PARTITION BY group_name)::integer AS \"Group users\" FROM (SELECT 'A' AS group_name, u.user_id, u.onboarding_goal, u.ai_edits_first_day, u.photos_imported, u.push_opt_in, u.acquisition_channel, u.platform, u.country FROM offline_users u WHERE $__timeFilter(u.install_at) AND (${a_platform:sqlstring} = '__all__' OR u.platform = ${a_platform:sqlstring}) AND (${a_country:sqlstring} = '__all__' OR u.country = ${a_country:sqlstring}) AND (${a_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${a_channel:sqlstring}) AND (${a_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${a_goal:sqlstring}) AND (${a_flow:sqlstring} = '__all__' OR u.flow = ${a_flow:sqlstring}) AND (${a_test:sqlstring} = '__all__' OR (${a_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${a_test:sqlstring}) UNION ALL SELECT 'B' AS group_name, u.user_id, u.onboarding_goal, u.ai_edits_first_day, u.photos_imported, u.push_opt_in, u.acquisition_channel, u.platform, u.country FROM offline_users u WHERE $__timeFilter(u.install_at) AND (${b_platform:sqlstring} = '__all__' OR u.platform = ${b_platform:sqlstring}) AND (${b_country:sqlstring} = '__all__' OR u.country = ${b_country:sqlstring}) AND (${b_channel:sqlstring} = '__all__' OR u.acquisition_channel = ${b_channel:sqlstring}) AND (${b_goal:sqlstring} = '__all__' OR u.onboarding_goal = ${b_goal:sqlstring}) AND (${b_flow:sqlstring} = '__all__' OR u.flow = ${b_flow:sqlstring}) AND (${b_test:sqlstring} = '__all__' OR (${b_test:sqlstring} = '__no_test__' AND COALESCE(u.ab_test, '') = '') OR u.ab_test = ${b_test:sqlstring})) cohorts GROUP BY group_name, platform, country ORDER BY group_name, \"Users\" DESC"
+        }
+      ]
+    }
+  ]
+}

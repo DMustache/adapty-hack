@@ -1,0 +1,234 @@
+{
+  "id": null,
+  "uid": "business-revenue",
+  "title": "2. Business and Revenue — Offline",
+  "description": "Historical synthetic transactions; churn rate, MRR loss and revenue at risk await approved definitions or model predictions.",
+  "tags": [
+    "adapty",
+    "synthetic",
+    "offline",
+    "retention"
+  ],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "time": {
+    "from": "2026-07-01T00:00:00Z",
+    "to": "2026-11-08T00:00:00Z"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "platform",
+        "label": "Platform",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(platform, '') AS __text, COALESCE(platform, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "country",
+        "label": "Country",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(country, '') AS __text, COALESCE(country, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "channel",
+        "label": "Channel",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(acquisition_channel, '') AS __text, COALESCE(acquisition_channel, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "goal",
+        "label": "Goal",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(onboarding_goal, '') AS __text, COALESCE(onboarding_goal, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "flow",
+        "label": "Flow",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(flow, '') AS __text, COALESCE(flow, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "test",
+        "label": "Test",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(ab_test, '') AS __text, COALESCE(ab_test, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Users and transaction users",
+      "description": "Historical synthetic users; not active subscribers or churn.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT COUNT(DISTINCT u.user_id)::integer AS \"Users\", COUNT(DISTINCT t.user_id)::integer AS \"Users with transactions\" FROM offline_users u LEFT JOIN offline_transactions t ON t.user_id=u.user_id WHERE $__timeFilter(u.install_at) AND u.platform LIKE '$platform' AND u.country LIKE '$country' AND u.acquisition_channel LIKE '$channel' AND u.onboarding_goal LIKE '$goal' AND u.flow LIKE '$flow' AND COALESCE(u.ab_test, '') LIKE '$test'"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Transactions by product",
+      "description": "Counts from transaction archive; not retention rate.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT t.product AS \"Product\", COUNT(*)::integer AS \"Transactions\", COUNT(DISTINCT t.user_id)::integer AS \"Users\" FROM offline_users u JOIN offline_transactions t ON t.user_id=u.user_id WHERE $__timeFilter(u.install_at) AND u.platform LIKE '$platform' AND u.country LIKE '$country' AND u.acquisition_channel LIKE '$channel' AND u.onboarding_goal LIKE '$goal' AND u.flow LIKE '$flow' AND COALESCE(u.ab_test, '') LIKE '$test' GROUP BY 1 ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Purchases by day",
+      "description": "Transaction events in selected install cohort, UTC.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT date_trunc('day',t.purchased_at) AS \"time\", COUNT(*)::integer AS \"Transactions\" FROM offline_users u JOIN offline_transactions t ON t.user_id=u.user_id WHERE $__timeFilter(u.install_at) AND u.platform LIKE '$platform' AND u.country LIKE '$country' AND u.acquisition_channel LIKE '$channel' AND u.onboarding_goal LIKE '$goal' AND u.flow LIKE '$flow' AND COALESCE(u.ab_test, '') LIKE '$test' AND $__timeFilter(t.purchased_at) GROUP BY 1 ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Refunds and billing issues by channel",
+      "description": "Descriptive events only; no causal attribution or model risk.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT u.acquisition_channel AS \"Channel\", COUNT(DISTINCT u.user_id)::integer AS \"Users\", COUNT(*) FILTER (WHERE t.refunded_at IS NOT NULL)::integer AS \"Refunded transactions\", COUNT(*) FILTER (WHERE t.billing_issue_detected_at IS NOT NULL)::integer AS \"Billing issue transactions\" FROM offline_users u LEFT JOIN offline_transactions t ON t.user_id=u.user_id WHERE $__timeFilter(u.install_at) AND u.platform LIKE '$platform' AND u.country LIKE '$country' AND u.acquisition_channel LIKE '$channel' AND u.onboarding_goal LIKE '$goal' AND u.flow LIKE '$flow' AND COALESCE(u.ab_test, '') LIKE '$test' GROUP BY 1 ORDER BY 1"
+        }
+      ]
+    }
+  ]
+}
