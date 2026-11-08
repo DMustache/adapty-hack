@@ -26,7 +26,7 @@ def http(method, url, payload=None):
 def psql(sql):
     result = subprocess.run(
         ["docker", "compose", "exec", "-T", "postgres", "psql", "-X", "-v", "ON_ERROR_STOP=1",
-         "-U", "adapty_demo", "-d", "adapty_demo", "-At"],
+         "-U", "adapty_demo", "-d", "adapty_demo", "-Atq"],
         cwd=ROOT, input=sql, text=True, capture_output=True, check=True,
     )
     return result.stdout.strip()
