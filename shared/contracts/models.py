@@ -59,6 +59,43 @@ class ChurnPredictionResult(BaseModel):
         return self
 
 
+class RetentionAtRiskCounts(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    subscribers_with_predictions: int = Field(ge=0)
+    renewal_already_due: int = Field(ge=0)
+    stale: int = Field(ge=0)
+    missing_plan_type: int = Field(ge=0)
+    eligible: int = Field(ge=0)
+    returned: int = Field(ge=0)
+
+
+class RetentionAtRiskCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    prediction_id: str = Field(min_length=1)
+    app_id: str = Field(min_length=1)
+    user_id: str = Field(min_length=1)
+    model_id: str = Field(min_length=1)
+    model_version: str = Field(min_length=1)
+    prediction_source: Literal["mock", "external"]
+    plan_type: Literal["weekly", "monthly"]
+    predicted_at: datetime
+    as_of_at: datetime
+    renewal_due_at: datetime
+    churn_probability: float = Field(ge=0, le=1, allow_inf_nan=False)
+    renewal_price_usd: float = Field(gt=0, allow_inf_nan=False)
+
+
+class RetentionAtRiskResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model_id: str = Field(min_length=1)
+    model_version: str = Field(min_length=1)
+    app_id: str = Field(min_length=1)
+    reference_time: datetime | None
+    max_age_days: float = Field(gt=0, le=365)
+    counts: RetentionAtRiskCounts
+    subscribers: list[RetentionAtRiskCandidate]
+
+
 class RetentionCandidate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     user_id: str = Field(min_length=1)
