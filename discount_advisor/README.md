@@ -11,8 +11,12 @@ See [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) for the full explanation.
 
 ## Run
 
+This folder lives inside the team repository (`DMustache/adapty-hack`). The dataset is not committed: clone
+`https://github.com/kpotehin/adapty-seed-data-hack` and point `DISCOUNT_DATA_DIR` at its `data/offline` folder,
+or place the clone at the repository root (it is git-ignored).
+
 ```bash
-# from the folder that contains discount_advisor/ (and the data, see below)
+# from the repository root
 python -m venv .venv && .venv\Scripts\activate          # or: source .venv/bin/activate
 pip install -r discount_advisor/requirements.txt
 cd discount_advisor
@@ -26,6 +30,8 @@ streamlit run app.py                                    # http://localhost:8501
 4. `adapty-seed-data-hack/data/offline/` next to `discount_advisor/` (the hackathon repo clone; used in this workspace)
 
 ## Tests
+
+Run from `discount_advisor/`; the tests find the data the same way the app does (`DISCOUNT_DATA_DIR` first).
 
 ```bash
 pip install pytest hypothesis

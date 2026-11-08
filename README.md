@@ -1,13 +1,13 @@
 # Smart Retention Offers — Adapty Hackathon Infrastructure
 
-**Scope:** infrastructure for an *externally developed* churn model and a **scenario-based retention experiment planner**. The dataset has **no observed response to discounts**, so **no uplift predictions, realized savings, or optimal discounts** are claimed. Do not train an ML model in this repository.
+**Scope:** infrastructure for an *externally developed* churn model and a **scenario-based retention experiment planner**. The dataset has **no observed response to discounts**, so **no uplift predictions, realized savings, or optimal discounts** are claimed. The services never train or score on their own: churn models are trained on the researcher side (`ml/`) and reach the services only as a checksummed artifact through the `ModelAdapter` boundary.
 
 ## Two custom services
 
 ```text
 External churn researcher -> trusted ModelAdapter -> Inference/Planning API :8001
                                                  |        |
-                                       static mock now   break-even / budget experiment planner
+                         mock + temporal CatBoost (ml/)  break-even / budget experiment planner
                                                  |        |
                                                  +-- structured results --> Analytics API :8002
                                                                          |
@@ -84,4 +84,26 @@ See `.workflow/README.md`, `docs/ARCHITECTURE.md`, and `docs/MODEL_HANDOFF.md`.
 
 ### Project state
 
-This is a **runnable mock infrastructure scaffold with planned worktree milestones**, not a trained or calibrated churn model, not a proven discount optimizer, and not a production Adapty integration. Unit/contract tests are supplied; container E2E depends on Docker availability.
+The infrastructure scaffold now also serves a **researcher-supplied temporal churn model** (validated on the synthetic Lumen data only), stores repeated predictions with `as_of_at`/`renewal_due_at`, and ships the **Discount Advisor** app and optional **usage-data** support. It is still not a proven discount optimizer and not a production Adapty integration. Unit/contract tests are supplied (93 in `tests/`, plus the Discount Advisor's own suite); container E2E depends on Docker availability and has not been run on the development machine.
+
+**Full summary of everything built:** [docs/PROJECT_SUMMARY.md](docs/PROJECT_SUMMARY.md).
+
+### Added components (2026-11-08)
+
+| Component | Where | Notes |
+|---|---|---|
+| Temporal churn model (CatBoost, point-in-time snapshots) | `ml/temporal_churn/` (training, evaluation), `services/inference/models/temporal_catboost/` (artifact), `services/inference/app/adapters/temporal_catboost.py` | Registered as `lumen-temporal-catboost` next to the mock when the artifact is present. See `docs/TEMPORAL_CHURN.md` |
+| Repeated predictions + risk trajectories | `postgres/init/003-temporal-predictions.sql`, `GET /v1/metrics/churn-trajectory`, Grafana `http://localhost:3000/d/churn-risk-trajectory` | Optional contract fields `as_of_at`, `renewal_due_at`, `renewal_price_usd` |
+| Replay snapshots through the API | `python scripts/score_temporal_snapshots.py --data-dir …/data/offline` | Local services only; no Adapty calls |
+| Optional usage events | `postgres/init/004-usage-events.sql`, `ml/usage/` | Not used by the deployed model. See `docs/USAGE_FEATURES.md` |
+| Discount Advisor (Streamlit) | `discount_advisor/` | Separate app, not a service. See `discount_advisor/README.md` |
+
+**Existing database volumes:** init scripts only run on new volumes. Apply the new ones once by hand:
+
+```bash
+docker compose exec -T postgres psql -U adapty_demo -d adapty_demo < postgres/init/003-temporal-predictions.sql
+docker compose exec -T postgres psql -U adapty_demo -d adapty_demo < postgres/init/004-usage-events.sql
+```
+
+The inference image now needs `catboost` (in `services/inference/requirements.txt`), so rebuild with
+`docker compose up --build`.

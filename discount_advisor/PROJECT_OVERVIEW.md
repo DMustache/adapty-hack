@@ -396,8 +396,11 @@ outside the US and Canada, split 50/50 by hash.
   with all 150 simulated users, and its live copy runs on `main`. The 4 original demo tests are unchanged.
 - **Rotate the Lumen app's secret key**, because it was pasted in chat once: App settings → General. The Adapty CLI
   can't rotate keys, and the scripts read the current key from the CLI, so nothing breaks.
-- **Git:** `discount_advisor/` is its own repository (branch `main`; `.live_cache/` excluded). In the hackathon repo, the
-  2-line Windows fix is committed on branch `windows-cli-fix`; its `main` matches GitHub. Nothing has been pushed.
+- **Git:** `discount_advisor/` is part of the team repository `DMustache/adapty-hack` on `main` (merged from the
+  `model-implementation` branch; `.live_cache/` is not committed). The 2-line Windows fix to the hackathon seeder
+  stays on a local branch `windows-cli-fix` of the organisers' repo (it can't be pushed there).
+- **Related work in the same repo:** temporal churn model (`docs/TEMPORAL_CHURN.md`), usage-data support
+  (`docs/USAGE_FEATURES.md`), full summary (`docs/PROJECT_SUMMARY.md`).
 - **Not finished:** the pitch slide deck was started (4 of 9 slides, a private claude.ai artifact) and then dropped.
   `DEMO_SCRIPT.md` covers the demo.
 

@@ -22,3 +22,13 @@ Synthetic input -> Inference API -> scenario plan --> Analytics API -> Postgres 
 **Seed data:** `kpotehin/adapty-seed-data-hack` is *synthetic*, single-app Lumen. Its transaction data provides no randomized discount outcomes. Researcher must specify label time windows, eligibility and avoid using post-cutoff transactions in features. Do not presume trained generalizability.
 
 **Workflow:** Lead writes jobs/contracts to main -> sync-plan to develop -> worker worktrees from develop -> Lead integrates -> QA gate on exact develop SHA -> promote to main. Fix loop as new jobs. Root AGENTS short; worktree role-specific AGENTS.
+
+**Current state (2026-11-08):**
+- **Inference** serves a researcher-supplied model, `lumen-temporal-catboost`, through the adapter boundary, next to
+  the mock. Training and evaluation live in `ml/temporal_churn/` (researcher side), never in the services.
+- **Analytics** stores repeated predictions with `as_of_at`, `renewal_due_at` and `renewal_price_usd`, and exposes
+  them as Grafana views (`churn_risk_trajectory`, `churn_risk_current`).
+- **Usage events** (`usage_events` table, `ml/usage/`) are an optional input not yet read by any service.
+- **The Discount Advisor** (`discount_advisor/`) is a separate Streamlit app, not a third service.
+
+Overview: `docs/PROJECT_SUMMARY.md`.

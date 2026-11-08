@@ -1,7 +1,7 @@
-# Optional usage-data support (branch `usage-features`)
+# Optional usage-data support
 
 App-usage events (sessions, app opens) are the signal the deployed churn model is missing: the Lumen dataset contains
-none. This branch adds the plumbing to use them once real exports exist. It is **kept separate from the deployed
+none. This adds the plumbing to use them once real exports exist (on `main` since 2026-11-08). It is **kept separate from the deployed
 model**: nothing in the services reads usage data, and `services/inference/models/temporal_catboost` is unchanged.
 
 ## 1. Storage and loading

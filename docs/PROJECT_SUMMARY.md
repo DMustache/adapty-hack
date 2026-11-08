@@ -1,6 +1,6 @@
 # Smart Retention Offers: complete project summary
 
-*Adapty hackathon · state of `main` at `fe18722` · 2026-11-08*
+*Adapty hackathon · state of `main` · 2026-11-08*
 
 This document summarises everything built: the data findings, the **Discount Advisor**, the **temporal churn model**
 and its experiments, **usage-data support**, the work in the **live Adapty account**, and how to run, test and extend it
@@ -244,7 +244,7 @@ better than random. This data has nothing that could warn earlier.
 
 | Branch | State |
 |---|---|
-| `main` | `fe18722`: everything above |
+| `main` | everything above, including this summary |
 | `temporal-churn` | contained in `main` (2 commits behind; redundant) |
 | `model-implementation` | contained in `main` (redundant) |
 

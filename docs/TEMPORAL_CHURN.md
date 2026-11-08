@@ -238,10 +238,14 @@ Tests: `python -m pytest -q`. Snapshot and adapter tests skip cleanly without th
 ## 5. Limitations
 
 - **Synthetic data:** effects were generated, not observed from real users.
-- **No engagement history:** a real deployment should add sessions, feature use and paywall views from Adapty
+- **No engagement history:** the loader and point-in-time usage features now exist (`docs/USAGE_FEATURES.md`); they need real exports and must pass the ablation rule before use. A real deployment should add sessions, feature use and paywall views from Adapty
   events or app analytics.
 - **Cadence:** snapshots are daily (weekly plans) or every 3 days (monthly). Annual plans are out of scope: no
   renewal is observable in 120 days.
 - **Calibration drift:** the training-to-holdout drop in churn causes slight over-prediction at low risk.
 - **No causal effect:** the model predicts risk, not what a discount would do. Retention offers still need
   randomized tests (`/v1/retention/plan`).
+
+**Where the model is weakest** (real evaluation, auto-renew still ON, by days before renewal):
+`ml/temporal_churn/reports/eval_auto_renew_on_by_horizon.md`. ROC-AUC is 0.640 at 1–6 days, 0.597 at 7–14 days and
+0.550 at 15–30 days (CI includes 0.5). Overview of everything: `docs/PROJECT_SUMMARY.md`.

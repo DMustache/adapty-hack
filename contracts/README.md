@@ -4,6 +4,7 @@ Schemas are generated from `shared/contracts/models.py` by Lead using `python sc
 
 - `churn-prediction-request.schema.json`: a single active subscriber, horizon, flexible features.
 - `churn-prediction-result.schema.json`: externally obtained churn probability or explicit mock fixture.
+- Both churn schemas have **optional** temporal fields (added 2026-11-08, backward compatible): `as_of_at` (the instant the features describe), `renewal_due_at` (the next eligible renewal; not before `as_of_at`), both with a timezone, and `renewal_price_usd` (> 0, for revenue at risk).
 - `retention-plan-request.schema.json`: weekly/monthly candidate list, prices, budget, discounts, deterministic seed, holdout share.
 - `retention-plan-result.schema.json`: randomized experiment arms, break-even thresholds, worst-case exposure. No treatment-uplift model.
 - `actual-observation.schema.json`: observed outcomes only, separate ingestion stream.
