@@ -129,9 +129,9 @@ if problem is None:
 
 max_lift = float(max_feasible_lift(base.conversion, q)) if base.conversion > 0 else float("nan")
 
-tab_rec, tab_sens, tab_cmp, tab_rt, tab_base, tab_data, tab_live, tab_method = st.tabs(
+tab_rec, tab_sens, tab_cmp, tab_rt, tab_base, tab_data, tab_live, tab_method, tab_ret = st.tabs(
     ["Recommendation", "Sensitivity", "Compare segments", "Randomized tests", "Baselines", "Data reality check",
-     "Live Adapty", "Method"])
+     "Live Adapty", "Method", "Retention offers"])
 
 # ================================================================ recommendation
 with tab_rec:
@@ -542,3 +542,8 @@ several arms), power 80%, at the break-even effect. Duration = n ÷ (weekly traf
 Synthetic data · response assumed, the same for every segment · ~17 weeks of history (annual renewals unobservable;
 long horizons partly extrapolated) · revenue, not profit · traffic is a sample.
 """)
+
+# ================================================================ retention offers (existing subscribers; separate)
+with tab_ret:
+    import retention_tab
+    retention_tab.render()

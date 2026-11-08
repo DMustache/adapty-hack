@@ -90,7 +90,7 @@ async def predict(request: ChurnPredictionRequest):
         renewal_horizon_days=request.renewal_horizon_days,
         churn_probability=float(probability),
         as_of_at=request.as_of_at, renewal_due_at=request.renewal_due_at,
-        renewal_price_usd=request.renewal_price_usd,
+        renewal_price_usd=request.renewal_price_usd, plan_type=request.plan_type,
     )
     await forward_to_analytics("/v1/ingest/predictions", result.model_dump(mode="json"))
     return result

@@ -44,6 +44,7 @@ def build_requests(snaps: pd.DataFrame, subscribers: int, days: int) -> list[dic
             "renewal_horizon_days": max(1, min(365, math.ceil(days_left))),
             "as_of_at": r.as_of_at.isoformat(), "renewal_due_at": r.renewal_due_at.isoformat(),
             "renewal_price_usd": float(r.renewal_price_usd),
+            "plan_type": rec["plan"] if rec["plan"] in ("weekly", "monthly") else None,
             "context": {"platform": rec["platform"], "plan": rec["plan"]},
             "features": S.feature_record(rec, "temporal"),
         })

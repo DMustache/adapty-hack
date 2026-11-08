@@ -47,7 +47,8 @@ def test_labels_and_synthetic_notice(at):
         assert tag in md
     assert "Synthetic" in md or "synthetic" in md
     assert [t.label for t in at.tabs] == ["Recommendation", "Sensitivity", "Compare segments", "Randomized tests",
-                                         "Baselines", "Data reality check", "Live Adapty", "Method"]
+                                         "Baselines", "Data reality check", "Live Adapty", "Method",
+                                         "Retention offers"]  # new, separate tab; the first 8 are unchanged
 
 
 def test_every_placement(at, ds):

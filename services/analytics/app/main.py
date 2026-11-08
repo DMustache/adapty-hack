@@ -1,7 +1,8 @@
 """Persistence and aggregation. Does not model churn or treatment uplift."""
 import json
 import os
-from fastapi import FastAPI, HTTPException
+from datetime import UTC, datetime
+from fastapi import FastAPI, HTTPException, Query
 from shared.contracts.models import ActualObservation, ChurnPredictionResult, RetentionPlanResult
 
 app = FastAPI(title="Smart Retention Offers — Analytics Infrastructure", version="0.2.0")
@@ -24,8 +25,8 @@ def ingest_prediction(prediction: ChurnPredictionResult):
             INSERT INTO churn_predictions
               (prediction_id, request_id, app_id, user_id, model_id, model_version,
                prediction_source, predicted_at, renewal_horizon_days, churn_probability,
-               as_of_at, renewal_due_at, renewal_price_usd)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               as_of_at, renewal_due_at, renewal_price_usd, plan_type)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (prediction_id) DO NOTHING
         """, (
             prediction.prediction_id, prediction.request_id, prediction.app_id,
@@ -33,6 +34,7 @@ def ingest_prediction(prediction: ChurnPredictionResult):
             prediction.prediction_source, prediction.predicted_at,
             prediction.renewal_horizon_days, prediction.churn_probability,
             prediction.as_of_at, prediction.renewal_due_at, prediction.renewal_price_usd,
+            prediction.plan_type,
         ))
         inserted = cur.rowcount == 1
     return {"status": "stored" if inserted else "duplicate", "prediction_id": prediction.prediction_id}
@@ -154,3 +156,69 @@ def churn_trajectory(user_id: str, app_id: str | None = None, model_id: str | No
          "expected_revenue_at_risk_usd": num(risk)}
         for pid, app, mid, ts, due, p, prev, delta, risk in rows
     ]}
+
+
+RETENTION_MODEL_ID = "lumen-temporal-catboost"
+
+
+@app.get("/v1/retention/at-risk")
+def retention_at_risk(model_id: str = RETENTION_MODEL_ID, app_id: str | None = None,
+                      model_version: str | None = None, as_of: datetime | None = None,
+                      max_age_days: float = Query(default=7, gt=0, le=365),
+                      limit: int = Query(default=1000, ge=1, le=100_000)):
+    """Latest valid prediction per subscriber, for retention-offer planning.
+
+    Valid = from `model_id` (optionally one `model_version`), with as_of_at, renewal_due_at and renewal_price_usd.
+    The reference time is `as_of` if given, else the newest as_of_at among valid predictions (the data's own clock;
+    for live scoring this is ~now). Per subscriber the newest prediction at or before the reference time is taken;
+    it is then dropped (never replaced by an older one) if its renewal is already due at the reference time or if it
+    is older than `max_age_days`. Returns raw probabilities and prices; no discount response is modeled here.
+    """
+    if as_of is not None and as_of.tzinfo is None:
+        raise HTTPException(status_code=422, detail="as_of must include a timezone (UTC)")
+    params = {"model_id": model_id, "app_id": app_id, "model_version": model_version, "as_of": as_of}
+    with db_connect() as conn, conn.cursor() as cur:
+        cur.execute("""
+            WITH valid AS (
+              SELECT prediction_id, app_id, user_id, model_version, plan_type, predicted_at, as_of_at,
+                     renewal_due_at, churn_probability, renewal_price_usd::double precision AS renewal_price_usd
+              FROM churn_predictions
+              WHERE model_id = %(model_id)s
+                AND (%(app_id)s::text IS NULL OR app_id = %(app_id)s::text)
+                AND (%(model_version)s::text IS NULL OR model_version = %(model_version)s::text)
+                AND as_of_at IS NOT NULL AND renewal_due_at IS NOT NULL AND renewal_price_usd IS NOT NULL
+            ),
+            ref AS (SELECT COALESCE(%(as_of)s::timestamptz, MAX(as_of_at)) AS t FROM valid)
+            SELECT DISTINCT ON (v.app_id, v.user_id)
+                   v.prediction_id, v.app_id, v.user_id, v.model_version, v.plan_type, v.predicted_at,
+                   v.as_of_at, v.renewal_due_at, v.churn_probability, v.renewal_price_usd, ref.t
+            FROM valid v CROSS JOIN ref
+            WHERE v.as_of_at <= ref.t
+            ORDER BY v.app_id, v.user_id, v.as_of_at DESC, v.predicted_at DESC, v.prediction_id DESC
+        """, params)
+        rows = cur.fetchall()
+    def utc(ts):  # the DB session may use a local time zone; the API always answers in UTC
+        return None if ts is None else ts.astimezone(UTC)
+
+    reference = utc(rows[0][-1] if rows else as_of)
+    counts = {"subscribers_with_predictions": len(rows), "renewal_already_due": 0, "stale": 0}
+    kept = []
+    for pid, app_, uid, version, plan, predicted, as_of_at, due, p, price, _ in rows:
+        predicted, as_of_at, due = utc(predicted), utc(as_of_at), utc(due)
+        if due <= reference:
+            counts["renewal_already_due"] += 1
+            continue
+        if (reference - as_of_at).total_seconds() > max_age_days * 86400:
+            counts["stale"] += 1
+            continue
+        kept.append({
+            "prediction_id": pid, "app_id": app_, "user_id": uid, "model_version": version, "plan_type": plan,
+            "predicted_at": predicted.isoformat(), "as_of_at": as_of_at.isoformat(),
+            "renewal_due_at": due.isoformat(), "churn_probability": float(p), "renewal_price_usd": float(price),
+        })
+    kept.sort(key=lambda r: (-r["churn_probability"] * r["renewal_price_usd"], r["app_id"], r["user_id"]))
+    counts["eligible"] = len(kept)
+    counts["returned"] = min(len(kept), limit)
+    return {"model_id": model_id, "model_version": model_version,
+            "reference_time": None if reference is None else reference.isoformat(),
+            "max_age_days": max_age_days, "counts": counts, "subscribers": kept[:limit]}
