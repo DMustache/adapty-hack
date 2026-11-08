@@ -3,7 +3,7 @@ id: FIX-QA-013
 milestone: M8
 role: qa
 priority: P1
-status: READY
+status: DONE
 depends_on: [M8-QA-001]
 owned_paths:
   - scripts/m8_live_demo.py
