@@ -2,6 +2,8 @@
 
 This is the preserved M4 mock walkthrough. The current M5/M6 path also loads the fixed `lumen-temporal-catboost` 1.0.0 adapter for synthetic inputs; see [M5 demo](M5_DEMO.md) and the [M6 walkthrough](M6_WALKTHROUGH_RU.md).
 
+For the complete current endpoint/data/panel map and staged Grafana demo, see [SYSTEM_FLOW_AND_DASHBOARDS_RU.md](SYSTEM_FLOW_AND_DASHBOARDS_RU.md).
+
 This project adds **two local APIs alongside Adapty**. They do not replace the Adapty SDK, dashboard, or server-side API. Adapty manages subscription products, paywalls or flows, placements, and live A/B tests. Our APIs accept a churn probability, calculate a reviewable retention experiment scenario, and store the inputs and proposal for inspection. There is no live Adapty write path in this milestone.
 
 Adapty also has [A/B test predictions](https://adapty.io/docs/predictions-in-ab-tests), which forecast long-term revenue for test variants. That is a different prediction target from this project's **per-subscriber churn probability**. The commands on this page use the fixed mock fixture; the current service also loads the separate fixed external model.
@@ -28,7 +30,7 @@ M7 adds the read-only Analytics `GET /v1/retention/at-risk?app_id=lumen` candida
 | `POST :8002/v1/ingest/predictions` and `GET :8002/v1/predictions/{id}` | Prediction → stored prediction | Internal persistence and readback; the inference API normally calls ingest. |
 | `POST :8002/v1/ingest/experiments` and `GET :8002/v1/experiments/{id}` | Proposal → immutable stored proposal | Internal persistence and review; a changed retry with the same experiment ID is rejected. |
 | `GET :8002/v1/metrics/churn-risk` | Optional `app_id` → stored risk points | Read data for checks and Grafana. |
-| `GET :8002/v1/metrics/churn-trajectory` | App/model/source filters → dated stored risk points | Show synthetic model risk over time, separate from mock predictions. |
+| `GET :8002/v1/metrics/churn-trajectory` | Required `user_id`, optional app/model → dated stored risk points | Show one subscriber's stored risk trajectory. Grafana filters prediction source in its own SQL query. |
 | `POST :8002/v1/ingest/actuals` | Explicit observed metric and UTC timestamp → stored/duplicate status | Keep actual observations separate from hypothetical proposals. No Adapty event feed is connected yet. |
 | `POST :8002/v1/ingest/lineage/{kind}` and `GET :8002/v1/lineage/{experiment_id}` | Assignment, exposure and outcome records → persisted event lineage | The M5/M6 demo uses `source=simulated`; these endpoints do not imply live Adapty events. |
 
