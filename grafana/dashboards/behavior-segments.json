@@ -11,7 +11,7 @@
   ],
   "timezone": "utc",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "",
   "time": {
     "from": "2026-07-01T00:00:00Z",
@@ -28,9 +28,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT DISTINCT platform AS __text, platform AS __value FROM offline_users ORDER BY 1",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT platform AS __text, platform AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -46,9 +45,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT DISTINCT country AS __text, country AS __value FROM offline_users ORDER BY 1",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT country AS __text, country AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -64,9 +62,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT DISTINCT acquisition_channel AS __text, acquisition_channel AS __value FROM offline_users ORDER BY 1",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT acquisition_channel AS __text, acquisition_channel AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -82,9 +79,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT DISTINCT onboarding_goal AS __text, onboarding_goal AS __value FROM offline_users ORDER BY 1",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT onboarding_goal AS __text, onboarding_goal AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -100,9 +96,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT DISTINCT flow AS __text, flow AS __value FROM offline_users ORDER BY 1",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT flow AS __text, flow AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -118,9 +113,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT __text, __value FROM (SELECT DISTINCT ab_test AS __text, ab_test AS __value FROM offline_users WHERE NULLIF(ab_test, '') IS NOT NULL UNION ALL SELECT '(No test)' AS __text, '__no_test__' AS __value) choices ORDER BY __text",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT '(No test)' AS __text, '__no_test__' AS __value UNION ALL SELECT DISTINCT ab_test AS __text, ab_test AS __value FROM offline_users WHERE NULLIF(ab_test, '') IS NOT NULL) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -136,9 +130,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT DISTINCT platform AS __text, platform AS __value FROM offline_users ORDER BY 1",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT platform AS __text, platform AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -154,9 +147,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT DISTINCT country AS __text, country AS __value FROM offline_users ORDER BY 1",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT country AS __text, country AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -172,9 +164,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT DISTINCT acquisition_channel AS __text, acquisition_channel AS __value FROM offline_users ORDER BY 1",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT acquisition_channel AS __text, acquisition_channel AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -190,9 +181,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT DISTINCT onboarding_goal AS __text, onboarding_goal AS __value FROM offline_users ORDER BY 1",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT onboarding_goal AS __text, onboarding_goal AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -208,9 +198,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT DISTINCT flow AS __text, flow AS __value FROM offline_users ORDER BY 1",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT DISTINCT flow AS __text, flow AS __value FROM offline_users) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
@@ -226,9 +215,8 @@
           "uid": "adapty-pg"
         },
         "refresh": 1,
-        "query": "SELECT __text, __value FROM (SELECT DISTINCT ab_test AS __text, ab_test AS __value FROM offline_users WHERE NULLIF(ab_test, '') IS NOT NULL UNION ALL SELECT '(No test)' AS __text, '__no_test__' AS __value) choices ORDER BY __text",
-        "includeAll": true,
-        "allValue": "__all__",
+        "query": "SELECT __text, __value FROM (SELECT 'All'::text AS __text, '__all__'::text AS __value UNION ALL SELECT '(No test)' AS __text, '__no_test__' AS __value UNION ALL SELECT DISTINCT ab_test AS __text, ab_test AS __value FROM offline_users WHERE NULLIF(ab_test, '') IS NOT NULL) choices ORDER BY CASE WHEN __value = '__all__' THEN 0 ELSE 1 END, __text",
+        "includeAll": false,
         "multi": false,
         "current": {
           "text": "All",
