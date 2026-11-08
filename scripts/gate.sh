@@ -33,7 +33,7 @@ REPORT="$REPORTDIR/$MS.log"
     echo "--- live M3 analytics and Grafana QA ---"
     M3_QA_INTEGRATION=1 "$PYTHON" -m pytest -q tests/test_m3_analytics_contract.py -k postgres_ingestion
   fi
-  if [[ "$MS" == M5 ]]; then
+  if [[ "$MS" == M5 || "$MS" == M6 ]]; then
     echo "--- live M5 fixed-model and migration QA ---"
     M5_QA_INTEGRATION=1 "$PYTHON" -m pytest -q tests/test_m5_temporal_live.py
     echo "--- synthetic M5 experiment and policy demo ---"
@@ -41,6 +41,10 @@ REPORT="$REPORTDIR/$MS.log"
     echo "--- cutoff-safe synthetic audit export ---"
     "$PYTHON" scripts/export_m5_audit.py --demo-output "$REPORTDIR/m5-demo.json" \
       --output "$REPORTDIR/m5-audit.json"
+  fi
+  if [[ "$MS" == M6 ]]; then
+    echo "--- three simulated M6 test outcomes and five Grafana dashboards ---"
+    "$PYTHON" scripts/m6_multi_demo.py --output "$REPORTDIR/m6-multi-demo.json"
   fi
   echo "GATE PASS $MS $SHA"
 ) 2>&1 | tee "$REPORT"
