@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CHECKOUT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ "$CHECKOUT" == */.worktrees/develop ]]; then
+  ROOT="$(cd "$CHECKOUT/../.." && pwd)"
+else
+  ROOT="$CHECKOUT"
+fi
 DEV="$ROOT/.worktrees/develop"
 [[ "$(git -C "$ROOT" branch --show-current)" == main ]] || exit 1
 [[ "$(git -C "$DEV" branch --show-current)" == develop ]] || exit 1
