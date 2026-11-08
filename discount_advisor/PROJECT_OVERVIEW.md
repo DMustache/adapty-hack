@@ -201,13 +201,46 @@ The **Sensitivity** tab shows how the best discount *under the assumptions* move
 
 ---
 
-## 8. App tabs
+## 8. The randomized tests in the data (a real finding)
+
+The dataset contains three **randomized** A/B tests from the hackathon: users were randomly assigned to one of two
+paywalls. The arms are balanced: they differ by at most 2.0 percentage points on platform, country and acquisition
+channel. So their differences are **causal effects**, unlike every other comparison in the data. They change the
+offer's *structure*, not its price.
+
+| Test (placement) | Control → winner | Conversion | Revenue per install (12 mo) | Cash received so far |
+|---|---|---|---|---|
+| Onboarding: annual trial vs weekly first (`onboarding`) | `onb_trial` → **`onb_weekly`** | 11.3% → **22.3%** (+96%) | $5.36 → **$11.05** (+106%) | +84% |
+| Settings: upgrade vs lifetime anchor (`settings_upgrade`) | `settings` → **`main_lifetime`** | 17.5% → **25.0%** (+43%) | $10.44 → **$15.75** (+51%) | +17% |
+| Main (US/Canada): 3 plans vs lifetime anchor (`main`) | `main` → **`main_lifetime`** | 23.9% → **30.2%** (+26%) | $16.29 → **$22.25** (+37%) | +81% |
+
+All three differences are significant (p < 0.001).
+
+**What it means for discounts:**
+1. **Offer structure beat any discount, at full price.** Changing the paywall raised conversion by 26–96% with no price
+   cut. A 35% discount on onboarding only *breaks even* at +34%. So **test the paywall structure first, then discounts
+   on the winning paywall.**
+2. **It exposed a blend in our own recommendation.** The `onboarding` placement mixes the two test paywalls 50/50. The
+   blended audience gives "test 35% off". On the winning `onb_weekly` paywall alone it's **test 40% off** (break-even
+   36.7%, 456 users per group, about 3 weeks); on `onb_trial` alone it's 25%. The app now **warns** when an audience
+   mixes paywalls, and *Segment filter → Flow (paywall)* gives the per-paywall answer.
+3. **A reality check for the assumed response.** Our default guess (a 20% discount lifts conversion 5–50%) is in the
+   same range as the offer changes this app's users responded to. It's still not a measurement of discount sensitivity.
+
+**Caveats:** the data is synthetic, so the generator built these effects in. Revenue per install includes extrapolated
+renewals; "cash received so far" is measured only. Code: `experiments.py`; app tab: **Randomized tests**;
+tests: `tests/test_experiments.py`.
+
+---
+
+## 9. App tabs
 
 | Tab | Content |
 |---|---|
 | **Recommendation** | headline · c₀ with CI, payers, V₀ (with extrapolated share), share touched, traffic · decision rule · per-discount table with verdicts · revenue curve with labelled band · break-even vs assumed chart · DATA / CALCULATED / ASSUMED input tables · test-size method |
 | **Sensitivity** | switch points · heatmap · win frequency · saturation explanation |
 | **Compare segments** | placements, or segments within the selected placement: payers, conversion with CI, V₀, extrapolated share, share touched, traffic, break-even, test candidate, users per arm, weeks. Cohorts under 30 payers are flagged and get no recommendation. Confounding caveat. |
+| **Randomized tests** | the three randomized A/B tests in the data: conversion with CI, difference with CI and p-value, revenue per install, cash so far, plan mix, balance check, and what it means for discounts |
 | **Baselines** | per-segment conversion with CI, payers, refund rate, observed vs expected revenue, extrapolated share, traffic · renewal curves (estimated vs extrapolated) · per-plan table (observed steps, 2nd payment, tail rate, refund rate) · plan mix · horizon warning |
 | **Data reality check** | synthetic notice, cutoff, data semantics computed at runtime, contents vs gaps, regional price chart with confounding explanation |
 | **Live Adapty** | the 5k and 50k Adapty apps vs the offline CSV for the same users (counts, refunds, cancellations, plan mix, revenue), plus the simulated discount test per arm with a significance check. Reads local snapshots only; never calls Adapty. |
@@ -215,7 +248,7 @@ The **Sensitivity** tab shows how the best discount *under the assumptions* move
 
 ---
 
-## 9. Code and tests
+## 10. Code and tests
 
 ```
 discount_advisor/
@@ -224,11 +257,13 @@ discount_advisor/
 ├── metrics.py              measured baselines (no Streamlit)
 ├── economics.py            break-even, response curve, simulation, sensitivity, test plan (no Streamlit)
 ├── charts.py               Plotly figures
-├── adapty_live.py          read-only download of seeded profiles from a live Adapty app (section 10)
-├── build_seed_dataset.py   50k offline CSVs → seeder dataset format (section 10)
-├── seed_50k.py             seeds a new Adapty app with all 50k users (section 10)
-├── adapty_experiment.py    discount A/B test with simulated users in the live app (section 10)
+├── adapty_live.py          read-only download of seeded profiles from a live Adapty app (section 11)
+├── build_seed_dataset.py   50k offline CSVs → seeder dataset format (section 11)
+├── seed_50k.py             seeds a new Adapty app with all 50k users (section 11)
+├── adapty_experiment.py    discount A/B test with simulated users in the live app (section 11)
 ├── live_view.py            Live Adapty tab: summaries from local snapshots (no network)
+├── experiments.py          the randomized A/B tests in the data; blend detection (section 8)
+├── DISCOUNT_FORMULA.md     how a discount is picked, with a worked example
 ├── DEMO_SCRIPT.md          3-minute demo script with the app's default numbers
 ├── .live_cache/            downloaded profiles + generated 50k dataset (no keys; not in git)
 └── tests/
@@ -241,14 +276,15 @@ discount_advisor/
     ├── test_app.py         the real app driven headlessly through placements, segments, offers, horizons,
     │                       infeasible and degenerate assumptions, slider extremes, arms, fee, traffic override, selectors
     ├── test_live_view.py   Live Adapty tab logic on hand-made snapshots (offline)
-    └── test_live_adapty.py live Adapty app vs offline data (skipped unless ADAPTY_LIVE=1; section 10)
+    ├── test_experiments.py randomized tests: arms, lifts, p-values, balance, blend detection
+    └── test_live_adapty.py live Adapty app vs offline data (skipped unless ADAPTY_LIVE=1; section 11)
 ```
 
 See the README for run commands.
 
 **Latest runs:**
-- 2026-11-08, after adding costs and the Live Adapty tab: `python -m pytest tests -q` → **178 passed, 24 skipped** in
-  about 7½ minutes. The 24 skipped are the live Adapty checks, which need `ADAPTY_LIVE=1`.
+- 2026-11-08, after adding the Randomized tests tab: `python -m pytest tests -q` → **188 passed, 24 skipped** in
+  about 9 minutes. The 24 skipped are the live Adapty checks, which need `ADAPTY_LIVE=1`.
 - 2026-11-07, live checks, 5,000-user app: **24 passed**.
 - 2026-11-07, live checks, 50,000-user app: **22 passed, 2 skipped** (the skipped two check "installed today" users, which that app
   deliberately doesn't have).
@@ -257,12 +293,12 @@ Re-run after any change; these numbers are only valid for the code as of that da
 
 ---
 
-## 10. The live Adapty account
+## 11. The live Adapty account
 
 The Discount Advisor reads the offline CSVs. Separately, we seeded a real Adapty account with the same synthetic
 population and checked that what Adapty stores matches what the advisor analyses.
 
-### 10.1 Seeding the hackathon app (5,000 users)
+### 11.1 Seeding the hackathon app (5,000 users)
 - **Setup:** Node.js v24, Adapty CLI 0.18.0 (`npm install -g adapty@latest`), `adapty auth login`.
 - **Windows fix in the hackathon repo:** `seed_adapty.py` started the CLI by the bare name `adapty`, which Python can't
   launch on Windows (npm installs it as `adapty.cmd`). Two lines in `Cli.__init__` now use the full path from
@@ -277,7 +313,7 @@ population and checked that what Adapty stores matches what the advisor analyses
 - **Tracked revenue:** the seeder dates all of it before the app's first profile, which keeps it outside Adapty's
   monthly tracked revenue (MTR).
 
-### 10.2 Live verification (5,000-user app)
+### 11.2 Live verification (5,000-user app)
 All **6,000** profiles were downloaded (`adapty_live.py`, about 2 minutes, read-only) and compared with the offline data in
 `tests/test_live_adapty.py`. **24 of 24 checks pass.**
 
@@ -300,7 +336,7 @@ Three things that look like mismatches but are **how Adapty represents data**. T
   exchange rates: revenue ÷ net local price is constant per currency (variation < 3.1%), against up to 30% when computed
   gross. So Adapty, like the Discount Advisor, treats a refunded receipt as $0.
 
-### 10.3 Discount A/B test with simulated users (`adapty_experiment.py`)
+### 11.3 Discount A/B test with simulated users (`adapty_experiment.py`)
 A small end-to-end pipeline demo of what the advisor recommends.
 
 **Created in the Lumen app, all marked *(test)*:**
@@ -316,7 +352,7 @@ outside the US and Canada, split 50/50 by hash.
 
 **Sent:** 150 profiles, 150 paywall views, 25 purchases, 0 errors.
 
-- **Tracked revenue:** about **$582**, under the $5,000 free limit (see 10.5). The 4 original demo tests are untouched.
+- **Tracked revenue:** about **$582**, under the $5,000 free limit (see 11.5). The 4 original demo tests are untouched.
 - **What it shows:** only that the pipeline works (products, paywall, A/B test, attribution). The discount arm's extra
   buyers come from the advisor's own assumption, so **the result can't validate any discount**.
 - **What happened next (2026-11-08):** a cleanup step was started and interrupted. Before the interruption it had
@@ -327,7 +363,7 @@ outside the US and Canada, split 50/50 by hash.
 - **Result, honestly read:** control 14/83 buyers (16.9%), discount 11/67 (16.4%), difference −0.5 points, p = 0.94.
   That's noise, as expected with 150 users: the advisor sizes such a test at about 750 per arm.
 
-### 10.4 A second app with the full 50,000 users
+### 11.4 A second app with the full 50,000 users
 - **`build_seed_dataset.py`** converts the 50,000-user CSVs into the seeder's format. Timestamps are relative to
   2026-11-03 00:12:04 UTC; timezone and currency are mapped from country. **Verified:** converting the first 5,000
   users reproduces the shipped dataset with **0 differences**.
@@ -341,7 +377,7 @@ outside the US and Canada, split 50/50 by hash.
 - **Verification:** all 50,000 profiles downloaded (about 30 minutes) and checked. **22 passed, 2 skipped.** Total live
   revenue is $440.6k, against $429.7k from `price_usd`; the gap is Adapty's exchange rates.
 
-### 10.5 Billing: what "tracked revenue" means here
+### 11.5 Billing: what "tracked revenue" means here
 - **No real money moved.** The products are fictional, so no one was charged and nothing can be.
 - Adapty bills by **monthly tracked revenue (MTR)**: the value of purchases recorded in a month. It's **free up to
   $5,000 a month**; above that it charges about 1% or limits dashboard features.
@@ -355,7 +391,7 @@ outside the US and Canada, split 50/50 by hash.
   unless more purchases are sent.
 - **Rule from here on:** nothing that adds tracked revenue or could cost money is run without asking first.
 
-### 10.6 Current state and housekeeping
+### 11.6 Current state and housekeeping
 - **Everything is kept** (decided 2026-11-08): both apps keep all their data; the original discount test is *completed*
   with all 150 simulated users, and its live copy runs on `main`. The 4 original demo tests are unchanged.
 - **Rotate the Lumen app's secret key**, because it was pasted in chat once: App settings → General. The Adapty CLI
@@ -367,7 +403,7 @@ outside the US and Canada, split 50/50 by hash.
 
 ---
 
-## 11. Limitations
+## 12. Limitations
 
 - **Synthetic data**: findings describe the generated *Lumen* dataset, not real customers.
 - **Customer response is assumed**, and identical for all segments. Only an experiment can measure it.
@@ -383,7 +419,7 @@ outside the US and Canada, split 50/50 by hash.
 - **Live revenue differs from `price_usd`** for non-USD users, because Adapty applies its own exchange rates. The advisor uses
   the dataset's `price_usd`.
 
-## 12. Next steps
+## 13. Next steps
 1. Run the proposed test with **real** traffic as an Adapty paywall A/B test on the chosen placement, then replace L₂₀
    with the measured lift.
 2. Feed the advisor from live Adapty data instead of the offline CSVs. Profiles (what `adapty_live.py` downloads) only

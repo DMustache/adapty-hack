@@ -58,5 +58,5 @@ reproduces the shipped 5k file exactly), `seed_50k.py` (seed a new app with 50k 
 | `metrics.py` | **DATA**: conversion + Wilson CI, Kaplan–Meier renewals with censoring, refunds, revenue per payer split into observed / estimated / extrapolated, discount-touched share, traffic |
 | `economics.py` | **CALCULATED** break-even and test sizing; **ASSUMED** response curve with feasibility checks; Monte Carlo; sensitivity; experiment plan |
 | `charts.py` | Plotly figures |
-| `app.py` | Streamlit UI: Recommendation · Sensitivity · Compare segments · Baselines · Data reality check · Live Adapty · Method |
+| `app.py` | Streamlit UI: Recommendation · Sensitivity · Compare segments · Randomized tests · Baselines · Data reality check · Live Adapty · Method |
 | `tests/` | data integrity, censoring, maturity, refunds, chains, segment totals, formulas, feasibility, sample sizes, durations, end-to-end UI |

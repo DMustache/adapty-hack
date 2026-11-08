@@ -12,6 +12,7 @@ import charts
 from data import CATALOG, CONVERSION_WINDOW_DAYS, SUBSCRIPTION_PRODUCTS, load
 from economics import (ANCHOR_DISCOUNT, SENSITIVITY_PARAMS, Assumptions, Experiment, InfeasibleAssumption,
                        max_feasible_lift, plan_test, sensitivity_grid, simulate, switch_points, win_frequency)
+from experiments import arm_results, max_imbalance, mixed_flows
 from metrics import (MIN_AT_RISK, MIN_PAYERS, SEGMENT_DIMENSIONS, TAIL_RATES, country_price_vs_conversion,
                      periods_in_horizon, product_values, refund_rate, segment_baseline, segment_table)
 
@@ -106,6 +107,13 @@ st.caption("Should we **test** a discount for this subscription audience, and wh
 st.markdown(f"{DATA} measured from the data · {CALC} exact arithmetic on measured inputs and stated assumptions · "
             f"{ASSUMED} your scenario inputs or model structure the data can't identify")
 st.markdown(f"**Audience:** {audience} · {base.installs:,} mature installs · {base.payers:,} payers")
+_flows = mixed_flows(ds, mask)
+_flows = _flows[_flows >= 0.05]
+if len(_flows) > 1:
+    st.warning("This audience mixes **" + str(len(_flows)) + " different paywalls** ("
+               + ", ".join(f"`{f}` {v:.0%}" for f, v in _flows.items())
+               + "), e.g. the arms of an A/B test, so its baseline is a blend. For a recommendation on one paywall, "
+               "set **Segment filter → Flow (paywall)**. See the **Randomized tests** tab.")
 
 problem = None
 if base.small:
@@ -121,8 +129,9 @@ if problem is None:
 
 max_lift = float(max_feasible_lift(base.conversion, q)) if base.conversion > 0 else float("nan")
 
-tab_rec, tab_sens, tab_cmp, tab_base, tab_data, tab_live, tab_method = st.tabs(
-    ["Recommendation", "Sensitivity", "Compare segments", "Baselines", "Data reality check", "Live Adapty", "Method"])
+tab_rec, tab_sens, tab_cmp, tab_rt, tab_base, tab_data, tab_live, tab_method = st.tabs(
+    ["Recommendation", "Sensitivity", "Compare segments", "Randomized tests", "Baselines", "Data reality check",
+     "Live Adapty", "Method"])
 
 # ================================================================ recommendation
 with tab_rec:
@@ -377,6 +386,43 @@ Country drives both the price tier and people's willingness and ability to pay. 
 says nothing about what a discount would do. There's no randomised price or discount exposure in the data, so
 the customer response is an explicit **ASSUMPTION**, and the tool designs the experiment that would measure it.
 """)
+
+# ================================================================ randomized tests
+@st.cache_data(show_spinner="Analysing the randomized tests…")
+def randomized_arms(h: int) -> pd.DataFrame:
+    return arm_results(get_data(), h)
+
+
+with tab_rt:
+    st.markdown(f"{DATA} The data contains three **randomized** A/B tests: users were randomly assigned to one of two "
+                "paywalls. That makes these differences **causal effects**, unlike every other comparison here. They "
+                "change the offer's *structure* (trial vs weekly first, adding a lifetime plan), not the price, so they "
+                "don't measure discount sensitivity.")
+    arms = randomized_arms(horizon)
+    for test, g in arms.groupby("test", sort=False):
+        ctrl, var = g[g.role == "control"].iloc[0], g[g.role == "variant"].iloc[0]
+        p = var.p_value
+        st.subheader(test)
+        st.markdown(f"Placement `{ctrl.placement}` · control `{ctrl.arm}` vs variant `{var.arm}` · "
+                    f"conversion **{ctrl.conversion:.1%} → {var.conversion:.1%}** "
+                    f"({var.conv_diff:+.1%} points, 95% CI ±{var.conv_diff_ci:.1%}, "
+                    f"p {'< 0.001' if p < 0.001 else f'= {p:.3f}'}) · revenue per install **{var.revenue_lift:+.0%}**, "
+                    f"cash received so far **{var.cash_lift:+.0%}**")
+        st.dataframe(g[["arm", "role", "installs", "payers", "conversion", "conv_ci_low", "conv_ci_high",
+                        "revenue_per_payer", "revenue_per_install", "cash_per_install", "extrapolated_share",
+                        "plan_mix", "iOS share", "US share", "organic share"]].style.format({
+            "installs": "{:,}", "payers": "{:,}", "conversion": "{:.1%}", "conv_ci_low": "{:.1%}",
+            "conv_ci_high": "{:.1%}", "revenue_per_payer": "${:.2f}", "revenue_per_install": "${:.2f}",
+            "cash_per_install": "${:.2f}", "extrapolated_share": "{:.0%}", "iOS share": "{:.1%}",
+            "US share": "{:.1%}", "organic share": "{:.1%}"}), hide_index=True, width="stretch")
+    st.caption(f"Balance check: arms of the same test differ by at most {max_imbalance(arms):.1%} on platform, country "
+               "and acquisition channel, as expected from random assignment. Revenue per install uses the selected "
+               f"horizon ({horizon} months, incl. extrapolated renewals); cash received so far is measured only.")
+    st.info("**What this means for discounts.** Changing the offer's structure raised conversion by 26–96% at full "
+            "price. A discount has to beat that kind of gain just to break even (e.g. 35% off needs +34% on "
+            "onboarding), so **test the paywall structure first, then discounts on the winning paywall**. These "
+            "tests also show the onboarding placement mixes two very different paywalls: filter by *Flow (paywall)* "
+            "for a recommendation on one of them. Caveat: the data is synthetic, so these effects were built into it.")
 
 # ================================================================ live adapty
 @st.cache_data(show_spinner="Reading local Adapty snapshots…")

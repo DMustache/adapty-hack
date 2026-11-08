@@ -133,6 +133,23 @@ break-even lift. That's the smallest improvement worth finding.
 
 ---
 
+## Watch out: blended audiences
+
+The `onboarding` placement holds the two arms of a randomized A/B test (annual trial vs weekly first, 50/50), which
+convert very differently (11.3% vs 22.3%). The numbers above are for the blend. Per paywall:
+
+| Audience | Recommendation |
+|---|---|
+| onboarding, both paywalls (blend) | test 35% off (break-even 34.2%) |
+| onboarding, `onb_weekly` only (the A/B winner) | **test 40% off** (break-even 36.7%, 456 users per group, ≈ 3 weeks) |
+| onboarding, `onb_trial` only | test 25% off (break-even 26.9%, ≈ 7 weeks) |
+
+The app warns when an audience mixes paywalls; use *Segment filter → Flow (paywall)* for one paywall. The same
+randomized tests show that changing the offer's structure raised conversion by 26–96% at full price, so test the
+paywall first, then discounts on the winner (see `PROJECT_OVERVIEW.md`, section 8).
+
+---
+
 ## The bottom line
 
 - **Exact:** the break-even numbers (e.g. 35% off needs conversion to rise by 34.2%). They come from measured data.

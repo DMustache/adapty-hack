@@ -46,8 +46,8 @@ def test_labels_and_synthetic_notice(at):
     for tag in ["DATA", "CALCULATED", "ASSUMED"]:
         assert tag in md
     assert "Synthetic" in md or "synthetic" in md
-    assert [t.label for t in at.tabs] == ["Recommendation", "Sensitivity", "Compare segments", "Baselines",
-                                         "Data reality check", "Live Adapty", "Method"]
+    assert [t.label for t in at.tabs] == ["Recommendation", "Sensitivity", "Compare segments", "Randomized tests",
+                                         "Baselines", "Data reality check", "Live Adapty", "Method"]
 
 
 def test_every_placement(at, ds):
@@ -154,3 +154,21 @@ def test_live_tab_renders_from_snapshots(at):
     assert not at.exception
     texts_all = " ".join(m.value for m in at.markdown) + " ".join(c.value for c in at.caption)
     assert "local snapshots" in texts_all
+
+
+def test_blend_warning_and_flow_filter(at):
+    """onboarding mixes two A/B-test paywalls: warn, and the warning goes away when one paywall is selected."""
+    reset(at)
+    assert any("different paywalls" in x.value for x in at.warning)
+    w(at.sidebar.selectbox, "Segment filter").set_value("Flow (paywall)").run()
+    w(at.sidebar.selectbox, "Flow (paywall)").set_value("onb_weekly").run()
+    check(at, "onb_weekly")
+    assert not any("different paywalls" in x.value for x in at.warning)
+    reset(at)
+
+
+def test_randomized_tests_tab(at):
+    heads = [s.value for s in at.subheader]
+    for t in ["Onboarding: annual trial vs weekly first", "Main: 3 plans vs lifetime anchor (NA)",
+              "Settings: upgrade vs lifetime anchor"]:
+        assert t in heads

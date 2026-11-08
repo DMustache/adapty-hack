@@ -63,4 +63,5 @@ Optional, if time (**click: Live Adapty**):
 | *What about costs?* | Sidebar "Variable cost per paid period": a discount cuts price, not cost, so break-even rises. The data has no costs, so the default is 0. |
 | *Is the live A/B result real?* | No. Simulated users, labelled as such. It proves the pipeline, not the discount. |
 | *What's synthetic?* | All of it: the fictional Lumen app from the hackathon organisers. |
+| *Did you find anything in the data itself?* | Yes: three randomized A/B tests (tab **Randomized tests**). Changing the paywall's structure lifted conversion 26–96% at full price, more than a discount needs to break even. So: test structure first, discounts on the winning paywall. On the winning onboarding paywall the advisor says test 40%, not the blend's 35%. |
 | *Annual plans?* | 120 days of data can't show annual renewals; they count as one payment, and the app warns about it. |
