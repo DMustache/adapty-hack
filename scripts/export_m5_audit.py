@@ -85,6 +85,7 @@ def main():
     result = export(experiment_id)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    os.fchmod(fd, 0o600)
     with os.fdopen(fd, "w") as stream:
         json.dump(result, stream, indent=2)
         stream.write("\n")
