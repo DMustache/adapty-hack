@@ -2,6 +2,7 @@
 
 Skipped when the artifact (services/inference/models/temporal_catboost) or catboost is not installed.
 """
+import hashlib
 import json
 import shutil
 import time
@@ -12,8 +13,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 pytest.importorskip("catboost")
-from services.inference.app.adapters.temporal_catboost import (  # noqa: E402
-    DEFAULT_DIR, ArtifactIntegrityError, TemporalCatBoostAdapter,
+from services.inference.app.adapters.temporal_catboost import (
+    DEFAULT_DIR,
+    ArtifactIntegrityError,
+    TemporalCatBoostAdapter,
 )
 
 if not (DEFAULT_DIR / "model.cbm").exists():
@@ -38,6 +41,10 @@ def test_metadata_and_schema(adapter):
     schema = adapter.get_input_schema()
     assert schema["additionalProperties"] is False and set(schema["required"]) == set(adapter.features)
     assert adapter.source == "external" and adapter.model_id == "lumen-temporal-catboost"
+    assert adapter.model_version == "1.0.0"
+    expected_sha = "4f3fd0acc9944b19fd0743d3c0b8a8863b8d59e1e81065c5a0940d5b9fad1491"
+    assert hashlib.sha256((DEFAULT_DIR / "model.cbm").read_bytes()).hexdigest() == expected_sha
+    assert json.loads((DEFAULT_DIR / "metadata.json").read_text())["sha256"] == expected_sha
     for needed in ("days_until_renewal", "days_since_last_payment", "tenure_days", "renewal_count",
                    "historical_renewal_success_rate", "billing_issues_last_30d", "auto_renew_off"):
         assert needed in adapter.features
@@ -93,6 +100,7 @@ def test_predict_endpoint_propagates_temporal_fields(monkeypatch, adapter, fixtu
     assert out["churn_probability"] == pytest.approx(case["expected"], abs=1e-9)
     assert out["as_of_at"].startswith(case["as_of_at"][:19]) and out["renewal_price_usd"] == 6.99
     assert out["prediction_source"] == "external"
+    assert out["model_id"] == "lumen-temporal-catboost" and out["model_version"] == "1.0.0"
     stored = forward.await_args.args[1]
     assert stored["as_of_at"] and stored["renewal_due_at"] and stored["renewal_price_usd"] == 6.99
 
