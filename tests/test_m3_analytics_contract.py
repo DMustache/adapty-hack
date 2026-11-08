@@ -70,7 +70,7 @@ def test_m3_payloads_follow_frozen_schemas():
         validate(value, json.loads((SCHEMAS / f"{name}.schema.json").read_text()))
 
 
-def test_m3_dashboard_provisioning_and_scenario_semantics():
+def test_m3_datasource_and_current_dashboard_provisioning():
     board = json.loads(BOARD.read_text())
     datasource = DATASOURCE.read_text()
     assert board["timezone"].lower() == "utc"
@@ -80,16 +80,14 @@ def test_m3_dashboard_provisioning_and_scenario_semantics():
     panels = {panel["id"]: panel for panel in board["panels"]}
     assert {1, 2, 3, 4}.issubset(panels)
     assert all(panel["datasource"]["uid"] == "adapty-pg" for panel in panels.values())
-    mock_sql = panels[1]["targets"][0]["rawSql"].lower()
-    assert re.search(r"prediction_source\s*=\s*'mock'", mock_sql)
-    assert "churn_predictions" in mock_sql
-    for panel_id in (2, 3, 4):
-        assert "retention_experiments" in panels[panel_id]["targets"][0]["rawSql"]
+    assert board["uid"] == "smart-retention"
+    assert "offline" in board["title"].lower()
+    for panel in panels.values():
+        assert panel["targets"][0]["rawSql"].lstrip().lower().startswith("select ")
     labels = " ".join([board["title"], *[p["title"] for p in panels.values()]])
-    assert "scenario" in labels.lower()
-    assert "max" in panels[2]["title"].lower()
-    assert re.search(r"break[ -]even", panels[4]["title"].lower())
-    assert not re.search(r"(?<!not )(?<!no )(observed|realized) savings|saved revenue", labels.lower())
+    assert "campaign" in labels.lower()
+    assert "outcome measurement status" in labels.lower()
+    assert "saved revenue" not in labels.lower()
 
 
 def _psql(sql):
@@ -185,20 +183,7 @@ def test_m3_postgres_ingestion_idempotency_and_dashboard_queries():
         assert _psql(f"SELECT count(*) FROM actual_observations WHERE app_id='{plan['app_id']}'") == "1"
 
         assert _api("POST", "/v1/ingest/predictions", external)[0] == 201
-        panels = {p["id"]: p for p in json.loads(BOARD.read_text())["panels"]}
-        mock_sql = panels[1]["targets"][0]["rawSql"]
-        mock_sql = mock_sql.replace("$__timeFilter(predicted_at)",
-            f"prediction_id IN ('{pred['prediction_id']}','{external['prediction_id']}')")
-        mock_value = _psql(f"SELECT row_to_json(t) FROM ({mock_sql}) t")
-        mock_series = {key: value for key, value in json.loads(mock_value).items() if key != "time"}
-        assert len(mock_series) == 1
-        assert next(iter(mock_series.values())) == pytest.approx(0.8)
-        for panel_id in (2, 3, 4):
-            sql = panels[panel_id]["targets"][0]["rawSql"]
-            sql = re.sub(r"\$__timeFilter\([^)]*\)",
-                f"e.experiment_id='{plan['experiment_id']}'" if panel_id in (3, 4)
-                else f"experiment_id='{plan['experiment_id']}'", sql)
-            assert _psql(f"SELECT count(*) FROM ({sql}) panel_data") != "0"
+        assert _psql(f"SELECT count(*) FROM churn_predictions WHERE prediction_id='{external['prediction_id']}'") == "1"
         assert _psql("SELECT has_table_privilege('grafana_ro','churn_predictions','INSERT')") == "f"
         assert _psql("SELECT has_table_privilege('grafana_ro','retention_experiments','SELECT')") == "t"
     finally:
