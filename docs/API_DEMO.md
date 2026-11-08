@@ -15,6 +15,8 @@ Adapty also has [A/B test predictions](https://adapty.io/docs/predictions-in-ab-
 
 The snapshots were refreshed from the locally running integrated services after M5 and include the fixed-model demo routes. The live URLs reflect the running code. Regenerate snapshots from a running build with `curl -fsS http://localhost:8001/openapi.json | jq -S . > docs/openapi/inference.openapi.json` and the equivalent command for port 8002.
 
+M7 adds the read-only Analytics `GET /v1/retention/at-risk?app_id=lumen` candidate selection route. See [M7_CANDIDATE_BRIDGE_RU.md](M7_CANDIDATE_BRIDGE_RU.md) for cutoff and mock-data semantics.
+
 ## Why each API exists
 
 | Our method | Input → output | Purpose |

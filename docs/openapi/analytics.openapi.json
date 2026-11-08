@@ -88,6 +88,21 @@
             "title": "Model Version",
             "type": "string"
           },
+          "plan_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "weekly",
+                  "monthly"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Type"
+          },
           "predicted_at": {
             "format": "date-time",
             "title": "Predicted At",
@@ -374,7 +389,7 @@
     }
   },
   "info": {
-    "title": "Smart Retention Offers — Analytics Infrastructure",
+    "title": "Smart Retention Offers \u2014 Analytics Infrastructure",
     "version": "0.2.0"
   },
   "openapi": "3.1.0",
@@ -784,6 +799,106 @@
           }
         },
         "summary": "Get Prediction"
+      }
+    },
+    "/v1/retention/at-risk": {
+      "get": {
+        "description": "Read-only planner candidates from stored, cutoff-safe predictions.",
+        "operationId": "retention_at_risk_v1_retention_at_risk_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "app_id",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "title": "App Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "model_id",
+            "required": false,
+            "schema": {
+              "default": "lumen-temporal-catboost",
+              "title": "Model Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "model_version",
+            "required": false,
+            "schema": {
+              "default": "1.0.0",
+              "title": "Model Version",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "As Of"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_age_days",
+            "required": false,
+            "schema": {
+              "default": 7,
+              "exclusiveMinimum": 0,
+              "maximum": 365,
+              "title": "Max Age Days",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 1000,
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retention At Risk"
       }
     }
   }
