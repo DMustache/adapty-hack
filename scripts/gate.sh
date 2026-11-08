@@ -33,7 +33,7 @@ REPORT="$REPORTDIR/$MS.log"
     echo "--- live M3 analytics and Grafana QA ---"
     M3_QA_INTEGRATION=1 "$PYTHON" -m pytest -q tests/test_m3_analytics_contract.py -k postgres_ingestion
   fi
-  if [[ "$MS" == M5 || "$MS" == M6 || "$MS" == M7 ]]; then
+  if [[ "$MS" == M5 || "$MS" == M6 || "$MS" == M7 || "$MS" == M8 ]]; then
     echo "--- live M5 fixed-model and migration QA ---"
     M5_QA_INTEGRATION=1 "$PYTHON" -m pytest -q tests/test_m5_temporal_live.py
     echo "--- synthetic M5 experiment and policy demo ---"
@@ -42,13 +42,17 @@ REPORT="$REPORTDIR/$MS.log"
     "$PYTHON" scripts/export_m5_audit.py --demo-output "$REPORTDIR/m5-demo.json" \
       --output "$REPORTDIR/m5-audit.json"
   fi
-  if [[ "$MS" == M6 || "$MS" == M7 ]]; then
+  if [[ "$MS" == M6 || "$MS" == M7 || "$MS" == M8 ]]; then
     echo "--- three simulated M6 test outcomes and five Grafana dashboards ---"
     "$PYTHON" scripts/m6_multi_demo.py --output "$REPORTDIR/m6-multi-demo.json"
   fi
-  if [[ "$MS" == M7 ]]; then
+  if [[ "$MS" == M7 || "$MS" == M8 ]]; then
     echo "--- stored prediction candidate bridge ---"
     M7_QA_INTEGRATION=1 "$PYTHON" -m pytest -q tests/test_m7_candidate_bridge.py
+  fi
+  if [[ "$MS" == M8 ]]; then
+    echo "--- staged synthetic Grafana walkthrough ---"
+    "$PYTHON" scripts/m8_live_demo.py --output "$REPORTDIR/m8-live-demo.json"
   fi
   echo "GATE PASS $MS $SHA"
 ) 2>&1 | tee "$REPORT"

@@ -3,7 +3,7 @@ id: FIX-AN-002
 milestone: M7
 role: analytics
 priority: P1
-status: READY
+status: DONE
 depends_on: [M7-AN-001]
 owned_paths:
   - services/analytics/app/main.py

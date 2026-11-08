@@ -3,7 +3,7 @@ id: FIX-QA-012
 milestone: M7
 role: qa
 priority: P1
-status: READY
+status: DONE
 depends_on: [FIX-AN-002]
 owned_paths:
   - tests/test_m7_candidate_bridge.py
