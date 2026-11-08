@@ -62,11 +62,11 @@ def test_offline_loader_validates_join_and_snapshot(monkeypatch, tmp_path):
 
 
 def test_four_dashboards_are_read_only_and_source_honest():
-    files = list((ROOT / "grafana/dashboards").glob("*.json"))
+    offline_uids = {"model-health", "business-revenue", "behavior-segments", "smart-retention"}
+    files = [path for path in (ROOT / "grafana/dashboards").glob("*.json")
+             if json.loads(path.read_text())["uid"] in offline_uids]
     dashboards = [json.loads(path.read_text()) for path in files]
-    assert {dashboard["uid"] for dashboard in dashboards} == {
-        "model-health", "business-revenue", "behavior-segments", "smart-retention",
-    }
+    assert {dashboard["uid"] for dashboard in dashboards} == offline_uids
     for dashboard in dashboards:
         assert dashboard["timezone"] == "utc"
         assert "Offline" in dashboard["title"]

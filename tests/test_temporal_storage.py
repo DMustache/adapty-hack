@@ -1,6 +1,6 @@
 """Temporal prediction records: contract compatibility, analytics persistence/trajectory, SQL views, Grafana."""
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -47,7 +47,9 @@ def test_invalid_temporal_fields_rejected(extra):
 # ---------------------------------------------------------------- analytics
 class FakeDB:
     def __init__(self, rows=None):
-        self.rows, self.sql, self.params, self.values, self.rowcount = rows or [], None, None, None, 0
+        self.rows, self.sql, self.params, self.values = rows or [], None, None, None
+        self.records = {}
+        self.fetchone_result = None
 
     def __enter__(self):
         return self
@@ -63,7 +65,21 @@ class FakeDB:
         if "INSERT INTO churn_predictions" in sql:
             cols = sql.split("churn_predictions", 1)[1].split("VALUES", 1)[0]
             self.values = dict(zip([c.strip() for c in cols.strip(" ()\n").split(",")], params))
-            self.rowcount = 1
+            key = self.values["prediction_id"]
+            if key in self.records:
+                self.fetchone_result = None
+            else:
+                self.records[key] = self.values.copy()
+                self.fetchone_result = (key,)
+        elif "FROM churn_predictions WHERE prediction_id" in sql:
+            stored = self.records.get(params[0])
+            self.fetchone_result = (tuple(stored[name] for name in (
+                "request_id", "app_id", "user_id", "model_id", "model_version",
+                "prediction_source", "renewal_horizon_days", "churn_probability",
+            )) if stored else None)
+
+    def fetchone(self):
+        return self.fetchone_result
 
     def fetchall(self):
         return self.rows
@@ -75,8 +91,8 @@ def test_ingest_stores_temporal_columns(monkeypatch):
     payload = {**BASE_RESULT, "as_of_at": "2026-10-20T08:00:00Z", "renewal_due_at": "2026-10-23T08:00:00Z",
                "renewal_price_usd": 6.99}
     assert TestClient(analytics.app).post("/v1/ingest/predictions", json=payload).status_code == 201
-    assert db.values["as_of_at"] == datetime(2026, 10, 20, 8, tzinfo=timezone.utc)
-    assert db.values["renewal_due_at"] == datetime(2026, 10, 23, 8, tzinfo=timezone.utc)
+    assert db.values["as_of_at"] == datetime(2026, 10, 20, 8, tzinfo=UTC)
+    assert db.values["renewal_due_at"] == datetime(2026, 10, 23, 8, tzinfo=UTC)
     assert db.values["renewal_price_usd"] == 6.99
 
 
@@ -87,10 +103,26 @@ def test_ingest_without_temporal_fields_stores_nulls(monkeypatch):
     assert db.values["as_of_at"] is None and db.values["renewal_price_usd"] is None
 
 
+def test_temporal_snapshot_retry_is_immutable(monkeypatch):
+    db = FakeDB()
+    monkeypatch.setattr(analytics, "db_connect", lambda: db)
+    client = TestClient(analytics.app)
+    payload = {**BASE_RESULT, "as_of_at": "2026-10-20T08:00:00Z",
+               "renewal_due_at": "2026-10-23T08:00:00Z", "renewal_price_usd": 6.99}
+    assert client.post("/v1/ingest/predictions", json=payload).json()["status"] == "stored"
+    assert client.post("/v1/ingest/predictions", json=payload).json()["status"] == "duplicate"
+    for field, changed in (("as_of_at", "2026-10-21T08:00:00Z"),
+                           ("renewal_due_at", "2026-10-24T08:00:00Z"),
+                           ("renewal_price_usd", 7.99),
+                           ("model_version", "1.0.1")):
+        response = client.post("/v1/ingest/predictions", json={**payload, field: changed})
+        assert response.status_code == 409, field
+
+
 def test_trajectory_endpoint(monkeypatch):
-    t1 = datetime(2026, 10, 20, tzinfo=timezone.utc)
-    t2 = datetime(2026, 10, 21, tzinfo=timezone.utc)
-    due = datetime(2026, 10, 23, tzinfo=timezone.utc)
+    t1 = datetime(2026, 10, 20, tzinfo=UTC)
+    t2 = datetime(2026, 10, 21, tzinfo=UTC)
+    due = datetime(2026, 10, 23, tzinfo=UTC)
     db = FakeDB(rows=[("p1", "lumen", "m", t1, due, 0.10, None, None, 0.699),
                       ("p2", "lumen", "m", t2, due, 0.25, 0.10, 0.15, 1.7475)])
     monkeypatch.setattr(analytics, "db_connect", lambda: db)
@@ -115,6 +147,8 @@ def test_migration_adds_columns_views_and_grafana_grant():
         assert f"ADD COLUMN IF NOT EXISTS {col}" in sql
     assert "CREATE OR REPLACE VIEW churn_risk_trajectory" in sql and "CREATE OR REPLACE VIEW churn_risk_current" in sql
     assert "LAG(p.churn_probability)" in sql and "churn_probability * p.renewal_price_usd" in sql
+    assert "PARTITION BY p.app_id, p.user_id, p.model_id, p.model_version" in sql
+    assert "DISTINCT ON (app_id, user_id, model_id, model_version)" in sql
     assert "GRANT SELECT ON churn_risk_trajectory, churn_risk_current TO grafana_ro" in sql
 
 
