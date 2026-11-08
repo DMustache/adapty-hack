@@ -23,14 +23,16 @@ def ingest_prediction(prediction: ChurnPredictionResult):
         cur.execute("""
             INSERT INTO churn_predictions
               (prediction_id, request_id, app_id, user_id, model_id, model_version,
-               prediction_source, predicted_at, renewal_horizon_days, churn_probability)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               prediction_source, predicted_at, renewal_horizon_days, churn_probability,
+               as_of_at, renewal_due_at, renewal_price_usd)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (prediction_id) DO NOTHING
         """, (
             prediction.prediction_id, prediction.request_id, prediction.app_id,
             prediction.user_id, prediction.model_id, prediction.model_version,
             prediction.prediction_source, prediction.predicted_at,
             prediction.renewal_horizon_days, prediction.churn_probability,
+            prediction.as_of_at, prediction.renewal_due_at, prediction.renewal_price_usd,
         ))
         inserted = cur.rowcount == 1
     return {"status": "stored" if inserted else "duplicate", "prediction_id": prediction.prediction_id}
@@ -86,15 +88,20 @@ def get_prediction(prediction_id: str):
     with db_connect() as conn, conn.cursor() as cur:
         cur.execute("""
           SELECT prediction_id, app_id, user_id, model_id, model_version, prediction_source,
-                 churn_probability, predicted_at, renewal_horizon_days
+                 churn_probability, predicted_at, renewal_horizon_days,
+                 as_of_at, renewal_due_at, renewal_price_usd
           FROM churn_predictions WHERE prediction_id=%s
         """, (prediction_id,))
         row = cur.fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Prediction not found")
-    return dict(zip(("prediction_id", "app_id", "user_id", "model_id", "model_version",
-                     "prediction_source",
-                     "churn_probability", "predicted_at", "renewal_horizon_days"), row))
+    out = dict(zip(("prediction_id", "app_id", "user_id", "model_id", "model_version",
+                    "prediction_source",
+                    "churn_probability", "predicted_at", "renewal_horizon_days",
+                    "as_of_at", "renewal_due_at", "renewal_price_usd"), row))
+    if out.get("renewal_price_usd") is not None:
+        out["renewal_price_usd"] = float(out["renewal_price_usd"])
+    return out
 
 
 @app.get("/v1/metrics/churn-risk")
@@ -114,4 +121,36 @@ def churn_risk(app_id: str | None = None):
         {"prediction_id": pid, "app_id": app, "user_id": uid,
          "time": ts.isoformat(), "churn_probability": float(p)}
         for pid, app, uid, ts, p in rows
+    ]}
+
+
+@app.get("/v1/metrics/churn-trajectory")
+def churn_trajectory(user_id: str, app_id: str | None = None, model_id: str | None = None):
+    """One subscriber's stored predictions in as-of order, with the change since the previous prediction and the
+    expected next-renewal revenue at risk (probability x renewal price). Reads the churn_risk_trajectory view."""
+    conditions, params = ["user_id=%s"], [user_id]
+    if app_id is not None:
+        conditions.append("app_id=%s")
+        params.append(app_id)
+    if model_id is not None:
+        conditions.append("model_id=%s")
+        params.append(model_id)
+    with db_connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT prediction_id, app_id, model_id, effective_at, renewal_due_at, churn_probability, "
+            "previous_churn_probability, churn_probability_change, expected_revenue_at_risk_usd "
+            "FROM churn_risk_trajectory WHERE " + " AND ".join(conditions)
+            + " ORDER BY model_id ASC, effective_at ASC, predicted_at ASC, prediction_id ASC",
+            tuple(params))
+        rows = cur.fetchall()
+
+    def num(v):
+        return None if v is None else float(v)
+
+    return {"user_id": user_id, "points": [
+        {"prediction_id": pid, "app_id": app, "model_id": mid, "as_of_at": ts.isoformat(),
+         "renewal_due_at": None if due is None else due.isoformat(), "churn_probability": float(p),
+         "previous_churn_probability": num(prev), "churn_probability_change": num(delta),
+         "expected_revenue_at_risk_usd": num(risk)}
+        for pid, app, mid, ts, due, p, prev, delta, risk in rows
     ]}

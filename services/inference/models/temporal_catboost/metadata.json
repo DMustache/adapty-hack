@@ -1,0 +1,253 @@
+{
+ "model_id": "lumen-temporal-catboost",
+ "model_version": "1.0.0",
+ "format": "catboost-cbm",
+ "sha256": "4f3fd0acc9944b19fd0743d3c0b8a8863b8d59e1e81065c5a0940d5b9fad1491",
+ "features": [
+  "plan",
+  "platform",
+  "country",
+  "acquisition_channel",
+  "onboarding_goal",
+  "push_opt_in",
+  "app_version",
+  "placement",
+  "flow",
+  "renewal_price_usd",
+  "price_index",
+  "ai_edits_first_day",
+  "photos_imported",
+  "started_with_trial",
+  "tenure_days",
+  "renewal_count",
+  "days_until_renewal",
+  "days_since_last_payment",
+  "historical_renewal_success_rate",
+  "billing_issues_last_30d",
+  "days_since_install",
+  "auto_renew_off",
+  "days_since_auto_renew_off"
+ ],
+ "categorical_features": [
+  "plan",
+  "platform",
+  "country",
+  "acquisition_channel",
+  "onboarding_goal",
+  "push_opt_in",
+  "app_version",
+  "placement",
+  "flow"
+ ],
+ "boolean_features": [
+  "started_with_trial",
+  "auto_renew_off"
+ ],
+ "input_schema": {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "lumen-temporal-catboost features",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+   "plan",
+   "platform",
+   "country",
+   "acquisition_channel",
+   "onboarding_goal",
+   "push_opt_in",
+   "app_version",
+   "placement",
+   "flow",
+   "renewal_price_usd",
+   "price_index",
+   "ai_edits_first_day",
+   "photos_imported",
+   "started_with_trial",
+   "tenure_days",
+   "renewal_count",
+   "days_until_renewal",
+   "days_since_last_payment",
+   "historical_renewal_success_rate",
+   "billing_issues_last_30d",
+   "days_since_install",
+   "auto_renew_off",
+   "days_since_auto_renew_off"
+  ],
+  "properties": {
+   "plan": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "platform": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "country": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "acquisition_channel": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "onboarding_goal": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "push_opt_in": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "app_version": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "placement": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "flow": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "renewal_price_usd": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "price_index": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "ai_edits_first_day": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "photos_imported": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "started_with_trial": {
+    "type": "boolean"
+   },
+   "tenure_days": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "renewal_count": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "days_until_renewal": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "days_since_last_payment": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "historical_renewal_success_rate": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "billing_issues_last_30d": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "days_since_install": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "auto_renew_off": {
+    "type": "boolean"
+   },
+   "days_since_auto_renew_off": {
+    "type": [
+     "number",
+     "null"
+    ]
+   }
+  }
+ },
+ "target": "failure to renew at the next eligible renewal event (any reason)",
+ "unit": "active weekly/monthly paid subscriber at as_of_at (point-in-time snapshot)",
+ "data": "Adapty hackathon Lumen offline dataset (SYNTHETIC)",
+ "split": {
+  "observation_cutoff": "2026-11-03T00:07:04+00:00",
+  "test_start": "2026-10-05T00:07:04+00:00",
+  "train_rows": 61528,
+  "train_subscribers": 2412,
+  "train_as_of": [
+   "2026-07-06T10:07:53+00:00",
+   "2026-10-04T00:01:20+00:00"
+  ],
+  "test_rows": 28020,
+  "test_subscribers": 2130,
+  "test_as_of": [
+   "2026-10-05T00:07:28+00:00",
+   "2026-10-31T23:57:24+00:00"
+  ],
+  "censored_snapshots": 11717,
+  "total_snapshots": 109599
+ },
+ "params": {
+  "depth": 3,
+  "iterations": 100,
+  "learning_rate": 0.03,
+  "l2_leaf_reg": 10
+ },
+ "metrics": {
+  "n": 28020,
+  "churn_rate": 0.10067808708065668,
+  "brier": 0.060107658707638865,
+  "brier_base_rate": 0.09054200986243638,
+  "log_loss": 0.23367307746007585,
+  "pr_auc": 0.5178365488859857,
+  "roc_auc": 0.7669106201062794,
+  "ece": 0.01594641750857416,
+  "calib_slope": 1.3811558448494332,
+  "calib_intercept": 0.6335014604267453,
+  "rev_capture_10": 0.455519282434414,
+  "rev_capture_20": 0.5667408779046741
+ },
+ "trained_at": "2026-11-08T06:51:50+00:00"
+}

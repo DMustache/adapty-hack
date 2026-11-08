@@ -16,6 +16,20 @@ from services.inference.app.economics import make_plan
 logger = logging.getLogger("retention")
 app = FastAPI(title="Smart Retention Offers — Inference & Planning", version="0.2.0")
 ADAPTERS = {MockChurnAdapter.model_id: MockChurnAdapter()}
+
+
+def _register_temporal_model() -> None:
+    """Register the researcher's temporal CatBoost model if its artifact is installed; the mock stays available."""
+    try:
+        from services.inference.app.adapters.temporal_catboost import TemporalCatBoostAdapter
+        adapter = TemporalCatBoostAdapter()
+    except (FileNotFoundError, ImportError) as exc:
+        logger.info("Temporal churn model not installed: %s", exc)
+        return
+    ADAPTERS[adapter.model_id] = adapter
+
+
+_register_temporal_model()
 for adapter in ADAPTERS.values():
     adapter.load()
 
@@ -75,6 +89,8 @@ async def predict(request: ChurnPredictionRequest):
         prediction_source=adapter.source, predicted_at=datetime.now(timezone.utc),
         renewal_horizon_days=request.renewal_horizon_days,
         churn_probability=float(probability),
+        as_of_at=request.as_of_at, renewal_due_at=request.renewal_due_at,
+        renewal_price_usd=request.renewal_price_usd,
     )
     await forward_to_analytics("/v1/ingest/predictions", result.model_dump(mode="json"))
     return result
