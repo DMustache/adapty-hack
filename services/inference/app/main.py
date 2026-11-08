@@ -4,9 +4,11 @@ import math
 import os
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 import httpx
 from fastapi import FastAPI, HTTPException
-from jsonschema import ValidationError, validate
+from jsonschema import Draft202012Validator, ValidationError, validate
+from pydantic import BaseModel, ConfigDict
 from shared.contracts.models import (
     ChurnPredictionRequest, ChurnPredictionResult, RetentionPlanRequest, RetentionPlanResult,
 )
@@ -16,6 +18,28 @@ from services.inference.app.economics import make_plan
 logger = logging.getLogger("retention")
 app = FastAPI(title="Smart Retention Offers — Inference & Planning", version="0.2.0")
 ADAPTERS = {MockChurnAdapter.model_id: MockChurnAdapter()}
+SCHEMA_DIR = Path(__file__).resolve().parents[3] / "contracts" / "schemas"
+
+
+class DraftReadinessRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    cohort: dict
+    profile_sync: dict
+    draft: dict
+    placement_verified: bool
+    segment_verified: bool
+    control_flow_published: bool
+    treatment_flow_published: bool
+    offer_price_verified: bool
+    competing_live_test: bool = False
+
+
+def _validate_record(name: str, record: dict):
+    import json
+    schema = json.loads((SCHEMA_DIR / f"{name}.schema.json").read_text())
+    errors = list(Draft202012Validator(schema, format_checker=Draft202012Validator.FORMAT_CHECKER).iter_errors(record))
+    if errors:
+        raise HTTPException(status_code=422, detail=f"{name}: {errors[0].message}")
 
 
 def _register_temporal_model() -> None:
@@ -63,6 +87,43 @@ def model_schema(model_id: str):
     if adapter is None:
         raise HTTPException(status_code=404, detail="Unknown model_id")
     return adapter.get_input_schema()
+
+
+@app.post("/v1/retention/draft/check")
+def check_draft_readiness(request: DraftReadinessRequest):
+    """Validate a proposed mapping locally. This route never writes to Adapty."""
+    cohort, sync, draft = request.cohort, request.profile_sync, request.draft
+    for name, record in (("approved-cohort", cohort), ("profile-sync", sync), ("draft-test", draft)):
+        _validate_record(name, record)
+    reasons = []
+    if cohort["status"] != "approved" or cohort["source"] != "simulated":
+        reasons.append("demo_cohort_not_approved")
+    if not (cohort["app_id"] == sync["app_id"] == draft["app_id"]
+            and cohort["cohort_id"] == sync["cohort_id"] == draft["cohort_id"]
+            and cohort["policy_version"] == draft["policy_version"]):
+        reasons.append("cohort_mapping_mismatch")
+    if (cohort["prediction_id"], cohort["model_id"], cohort["model_version"]) != (
+        sync["prediction_id"], sync["model_id"], sync["model_version"]
+    ):
+        reasons.append("prediction_lineage_mismatch")
+    if sync["sync_status"] != "acknowledged" or not sync["propagation_checked_at"]:
+        reasons.append("profile_or_propagation_pending")
+    if sync["attribute_name"] != "churn_cohort" or sync["attribute_value"] != cohort["cohort_id"]:
+        reasons.append("cohort_attribute_mismatch")
+    if request.competing_live_test:
+        reasons.append("competing_live_test")
+    for field in ("placement_verified", "segment_verified", "control_flow_published",
+                  "treatment_flow_published", "offer_price_verified"):
+        if not getattr(request, field):
+            reasons.append(field + "_missing")
+    if draft["status"] != "draft" or draft["budget_mode"] != "estimate_only":
+        reasons.append("draft_or_budget_mode_invalid")
+    if draft["control_variation_id"] == draft["treatment_variation_id"] or draft["control_flow_id"] == draft["treatment_flow_id"]:
+        reasons.append("control_treatment_not_distinct")
+    return {"status": "not_ready" if reasons else "ready_for_operator_review",
+            "reasons": reasons, "mode": "local_dry_run", "writes_to_adapty": False,
+            "cohort_id": cohort["cohort_id"], "experiment_id": draft["experiment_id"],
+            "variation_ids": [draft["control_variation_id"], draft["treatment_variation_id"]]}
 
 
 @app.post("/v1/predict", response_model=ChurnPredictionResult)
