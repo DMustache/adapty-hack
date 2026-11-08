@@ -7,7 +7,9 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query
 from jsonschema import Draft202012Validator
 
-from shared.contracts.models import ActualObservation, ChurnPredictionResult, RetentionPlanResult
+from shared.contracts.models import (
+    ActualObservation, ChurnPredictionResult, RetentionAtRiskResponse, RetentionPlanResult,
+)
 
 app = FastAPI(title="Smart Retention Offers — Analytics Infrastructure", version="0.2.0")
 LINEAGE_KINDS = ("actual-assignment", "actual-exposure", "next-renewal-outcome")
@@ -285,7 +287,7 @@ def churn_trajectory(user_id: str, app_id: str | None = None, model_id: str | No
     ]}
 
 
-@app.get("/v1/retention/at-risk")
+@app.get("/v1/retention/at-risk", response_model=RetentionAtRiskResponse)
 def retention_at_risk(
     app_id: str = Query(min_length=1),
     model_id: str = "lumen-temporal-catboost",
