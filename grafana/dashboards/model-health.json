@@ -1,0 +1,234 @@
+{
+  "id": null,
+  "uid": "model-health",
+  "title": "1. Data and Model Health — Offline",
+  "description": "Synthetic source readiness; model performance is unavailable until model outputs and mature labels exist.",
+  "tags": [
+    "adapty",
+    "synthetic",
+    "offline",
+    "retention"
+  ],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "time": {
+    "from": "2026-07-01T00:00:00Z",
+    "to": "2026-11-08T00:00:00Z"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "platform",
+        "label": "Platform",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(platform, '') AS __text, COALESCE(platform, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "country",
+        "label": "Country",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(country, '') AS __text, COALESCE(country, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "channel",
+        "label": "Channel",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(acquisition_channel, '') AS __text, COALESCE(acquisition_channel, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "goal",
+        "label": "Goal",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(onboarding_goal, '') AS __text, COALESCE(onboarding_goal, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "flow",
+        "label": "Flow",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(flow, '') AS __text, COALESCE(flow, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      },
+      {
+        "name": "test",
+        "label": "Test",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "adapty-pg"
+        },
+        "refresh": 1,
+        "query": "SELECT DISTINCT COALESCE(ab_test, '') AS __text, COALESCE(ab_test, '') AS __value FROM offline_users ORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "%"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Offline source rows",
+      "description": "Synthetic source inventory. Model has not been delivered.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT source_name AS \"Source\", row_count AS \"Rows\", LEFT(sha256, 12) AS \"SHA-256 prefix\", imported_at AS \"Imported UTC\" FROM offline_imports ORDER BY source_name"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Model status",
+      "description": "An external-looking fixture does not establish a delivered model.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT 'No external churn model loaded' AS \"Status\", 'Quality metrics require versioned predictions and mature outcomes' AS \"Reason\""
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Installed users by day",
+      "description": "Synthetic user install dates, UTC.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT date_trunc('day',u.install_at) AS \"time\", COUNT(*)::integer AS \"Installed users\" FROM offline_users u WHERE $__timeFilter(u.install_at) AND u.platform LIKE '$platform' AND u.country LIKE '$country' AND u.acquisition_channel LIKE '$channel' AND u.onboarding_goal LIKE '$goal' AND u.flow LIKE '$flow' AND COALESCE(u.ab_test, '') LIKE '$test' GROUP BY 1 ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Selected segment size",
+      "description": "Denominator for this segment, not model coverage.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT COUNT(*)::integer AS \"Users in selected segment\" FROM offline_users u WHERE $__timeFilter(u.install_at) AND u.platform LIKE '$platform' AND u.country LIKE '$country' AND u.acquisition_channel LIKE '$channel' AND u.onboarding_goal LIKE '$goal' AND u.flow LIKE '$flow' AND COALESCE(u.ab_test, '') LIKE '$test'"
+        }
+      ]
+    }
+  ]
+}
