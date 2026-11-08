@@ -425,6 +425,66 @@
           "rawSql": "SELECT md5(user_id) AS \"Subscriber token\", effective_at AS \"As of\", previous_churn_probability AS \"Previous\", churn_probability AS \"Now\", churn_probability_change AS \"Change\", expected_revenue_at_risk_usd AS \"Revenue at risk ($)\" FROM churn_risk_trajectory WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND prediction_source = '$source' AND churn_probability_change > 0 AND $__timeFilter(effective_at) ORDER BY churn_probability_change DESC LIMIT 25"
         }
       ]
+    },
+    {
+      "id": 8,
+      "type": "barchart",
+      "title": "Simulated A/B lineage events (no measured effect)",
+      "description": "Counts of explicitly simulated assignment, actual exposure and mature outcome records. A missing event is absent, not zero uplift.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT variation_id AS \"Simulated variation\", kind AS \"Event kind\", COUNT(*)::integer AS \"Events\" FROM experiment_lineage WHERE app_id = '$app' AND model_id = '$model' AND model_version = '$version' AND source = 'simulated' AND '$source' = 'external' AND $__timeFilter(event_at) GROUP BY variation_id, kind ORDER BY variation_id, kind"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Simulated assignment to exposure to outcome (pending remains pending)",
+      "description": "One row per simulated assignment. Exposure and mature outcome are shown only when their own records exist. No customer identifiers or causal uplift.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "adapty-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 26,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT a.experiment_id AS \"Experiment\", a.variation_id AS \"Simulated variation\", a.event_at AS \"Assigned at UTC\", e.event_at AS \"Exposed at UTC\", o.event_at AS \"Mature outcome at UTC\", CASE WHEN o.event_at IS NOT NULL THEN 'mature' WHEN e.event_at IS NOT NULL THEN 'outcome pending' ELSE 'exposure pending' END AS \"Lineage state\" FROM experiment_lineage a LEFT JOIN experiment_lineage e ON e.kind = 'actual-exposure' AND e.app_id = a.app_id AND e.experiment_id = a.experiment_id AND e.assignment_id = a.assignment_id AND e.source = 'simulated' LEFT JOIN experiment_lineage o ON o.kind = 'next-renewal-outcome' AND o.app_id = a.app_id AND o.experiment_id = a.experiment_id AND o.assignment_id = a.assignment_id AND o.exposure_id = e.exposure_id AND o.source = 'simulated' WHERE a.kind = 'actual-assignment' AND a.source = 'simulated' AND a.app_id = '$app' AND a.model_id = '$model' AND a.model_version = '$version' AND '$source' = 'external' AND $__timeFilter(a.event_at) ORDER BY a.event_at DESC LIMIT 50"
+        }
+      ]
     }
   ]
 }
