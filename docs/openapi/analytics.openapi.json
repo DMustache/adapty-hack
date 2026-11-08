@@ -265,6 +265,198 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "RetentionAtRiskCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "app_id": {
+            "minLength": 1,
+            "title": "App Id",
+            "type": "string"
+          },
+          "as_of_at": {
+            "format": "date-time",
+            "title": "As Of At",
+            "type": "string"
+          },
+          "churn_probability": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Churn Probability",
+            "type": "number"
+          },
+          "model_id": {
+            "minLength": 1,
+            "title": "Model Id",
+            "type": "string"
+          },
+          "model_version": {
+            "minLength": 1,
+            "title": "Model Version",
+            "type": "string"
+          },
+          "plan_type": {
+            "enum": [
+              "weekly",
+              "monthly"
+            ],
+            "title": "Plan Type",
+            "type": "string"
+          },
+          "predicted_at": {
+            "format": "date-time",
+            "title": "Predicted At",
+            "type": "string"
+          },
+          "prediction_id": {
+            "minLength": 1,
+            "title": "Prediction Id",
+            "type": "string"
+          },
+          "prediction_source": {
+            "enum": [
+              "mock",
+              "external"
+            ],
+            "title": "Prediction Source",
+            "type": "string"
+          },
+          "renewal_due_at": {
+            "format": "date-time",
+            "title": "Renewal Due At",
+            "type": "string"
+          },
+          "renewal_price_usd": {
+            "exclusiveMinimum": 0.0,
+            "title": "Renewal Price Usd",
+            "type": "number"
+          },
+          "user_id": {
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prediction_id",
+          "app_id",
+          "user_id",
+          "model_id",
+          "model_version",
+          "prediction_source",
+          "plan_type",
+          "predicted_at",
+          "as_of_at",
+          "renewal_due_at",
+          "churn_probability",
+          "renewal_price_usd"
+        ],
+        "title": "RetentionAtRiskCandidate",
+        "type": "object"
+      },
+      "RetentionAtRiskCounts": {
+        "additionalProperties": false,
+        "properties": {
+          "eligible": {
+            "minimum": 0.0,
+            "title": "Eligible",
+            "type": "integer"
+          },
+          "missing_plan_type": {
+            "minimum": 0.0,
+            "title": "Missing Plan Type",
+            "type": "integer"
+          },
+          "renewal_already_due": {
+            "minimum": 0.0,
+            "title": "Renewal Already Due",
+            "type": "integer"
+          },
+          "returned": {
+            "minimum": 0.0,
+            "title": "Returned",
+            "type": "integer"
+          },
+          "stale": {
+            "minimum": 0.0,
+            "title": "Stale",
+            "type": "integer"
+          },
+          "subscribers_with_predictions": {
+            "minimum": 0.0,
+            "title": "Subscribers With Predictions",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "subscribers_with_predictions",
+          "renewal_already_due",
+          "stale",
+          "missing_plan_type",
+          "eligible",
+          "returned"
+        ],
+        "title": "RetentionAtRiskCounts",
+        "type": "object"
+      },
+      "RetentionAtRiskResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "app_id": {
+            "minLength": 1,
+            "title": "App Id",
+            "type": "string"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/RetentionAtRiskCounts"
+          },
+          "max_age_days": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 365.0,
+            "title": "Max Age Days",
+            "type": "number"
+          },
+          "model_id": {
+            "minLength": 1,
+            "title": "Model Id",
+            "type": "string"
+          },
+          "model_version": {
+            "minLength": 1,
+            "title": "Model Version",
+            "type": "string"
+          },
+          "reference_time": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Time"
+          },
+          "subscribers": {
+            "items": {
+              "$ref": "#/components/schemas/RetentionAtRiskCandidate"
+            },
+            "title": "Subscribers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "model_id",
+          "model_version",
+          "app_id",
+          "reference_time",
+          "max_age_days",
+          "counts",
+          "subscribers"
+        ],
+        "title": "RetentionAtRiskResponse",
+        "type": "object"
+      },
       "RetentionPlanResult": {
         "properties": {
           "app_id": {
@@ -882,7 +1074,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionAtRiskResponse"
+                }
               }
             },
             "description": "Successful Response"
