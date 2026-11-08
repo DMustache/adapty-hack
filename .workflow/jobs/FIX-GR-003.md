@@ -3,7 +3,7 @@ id: FIX-GR-003
 milestone: M5
 role: grafana
 priority: P1
-status: READY
+status: DONE
 depends_on: []
 owned_paths: [grafana/]
 ---

@@ -3,7 +3,7 @@ id: FIX-QA-010
 milestone: M5
 role: qa
 priority: P1
-status: READY
+status: DONE
 depends_on: []
 owned_paths: [tests/]
 ---
