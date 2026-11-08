@@ -8,12 +8,12 @@ Adapty also has [A/B test predictions](https://adapty.io/docs/predictions-in-ab-
 
 ## OpenAPI
 
-| Service | Interactive docs | Live spec | Checked-in M4 snapshot |
+| Service | Interactive docs | Live spec | Checked-in current snapshot |
 | --- | --- | --- | --- |
 | Inference and planning | <http://localhost:8001/docs> | <http://localhost:8001/openapi.json> | [`openapi/inference.openapi.json`](openapi/inference.openapi.json) |
 | Analytics | <http://localhost:8002/docs> | <http://localhost:8002/openapi.json> | [`openapi/analytics.openapi.json`](openapi/analytics.openapi.json) |
 
-The snapshots describe the tested M4 implementation. The live URLs reflect the running code. Regenerate snapshots from a running build with `curl -fsS http://localhost:8001/openapi.json | jq -S . > docs/openapi/inference.openapi.json` and the equivalent command for port 8002.
+The snapshots were refreshed from the locally running integrated services after M5 and include the fixed-model demo routes. The live URLs reflect the running code. Regenerate snapshots from a running build with `curl -fsS http://localhost:8001/openapi.json | jq -S . > docs/openapi/inference.openapi.json` and the equivalent command for port 8002.
 
 ## Why each API exists
 
@@ -22,10 +22,13 @@ The snapshots describe the tested M4 implementation. The live URLs reflect the r
 | `GET :8001/v1/models` and `GET :8001/v1/models/{model_id}/schema` | Model ID → available adapter and feature schema | Discover the mock and fixed external adapters and their schemas. |
 | `POST :8001/v1/predict` | Subscriber ID, model ID, horizon, features → labeled probability, model version, prediction ID | Record one risk input with provenance. The mock returns fixture values; the fixed external adapter scores synthetic model inputs. The service does not train a model. It forwards the result to analytics. |
 | `POST :8001/v1/retention/plan` | Candidate risks, prices, budget, discounts → proposed arms, maximum exposure, break-even hurdles | Compare hypothetical economics and preserve a control arm before an operator designs a real test. It forwards the proposal to analytics; it does not activate offers. |
+| `POST :8001/v1/retention/draft/check` | Synthetic cohort, profile-sync and draft records → local readiness result | Validate a demo mapping without writing to Adapty; `ready_for_operator_review` is a local dry-run status. |
 | `POST :8002/v1/ingest/predictions` and `GET :8002/v1/predictions/{id}` | Prediction → stored prediction | Internal persistence and readback; the inference API normally calls ingest. |
 | `POST :8002/v1/ingest/experiments` and `GET :8002/v1/experiments/{id}` | Proposal → immutable stored proposal | Internal persistence and review; a changed retry with the same experiment ID is rejected. |
 | `GET :8002/v1/metrics/churn-risk` | Optional `app_id` → stored risk points | Read data for checks and Grafana. |
+| `GET :8002/v1/metrics/churn-trajectory` | App/model/source filters → dated stored risk points | Show synthetic model risk over time, separate from mock predictions. |
 | `POST :8002/v1/ingest/actuals` | Explicit observed metric and UTC timestamp → stored/duplicate status | Keep actual observations separate from hypothetical proposals. No Adapty event feed is connected yet. |
+| `POST :8002/v1/ingest/lineage/{kind}` and `GET :8002/v1/lineage/{experiment_id}` | Assignment, exposure and outcome records → persisted event lineage | The M5/M6 demo uses `source=simulated`; these endpoints do not imply live Adapty events. |
 
 Both services also expose `GET /health`. These endpoints are project-specific; their `/v1` paths are **not Adapty API paths**. Adapty's documented [segments](https://adapty.io/docs/segments), [profile updates](https://adapty.io/docs/api-adapty/operations/updateProfile), and [A/B tests](https://adapty.io/docs/developer-cli-ab-tests) are the later integration surface. A live Adapty test would own its arm assignment; the planner's per-user arms are only a proposal and must not be sent as a second assignment system. See [the integration boundary](ADAPTY_INTEGRATION.md).
 

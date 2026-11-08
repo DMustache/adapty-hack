@@ -62,6 +62,18 @@
             "title": "App Id",
             "type": "string"
           },
+          "as_of_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of At"
+          },
           "churn_probability": {
             "maximum": 1.0,
             "minimum": 0.0,
@@ -93,9 +105,33 @@
             "title": "Prediction Source",
             "type": "string"
           },
+          "renewal_due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renewal Due At"
+          },
           "renewal_horizon_days": {
             "title": "Renewal Horizon Days",
             "type": "integer"
+          },
+          "renewal_price_usd": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renewal Price Usd"
           },
           "request_id": {
             "title": "Request Id",
@@ -468,6 +504,55 @@
         "summary": "Ingest Experiment"
       }
     },
+    "/v1/ingest/lineage/{kind}": {
+      "post": {
+        "operationId": "ingest_lineage_v1_ingest_lineage__kind__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Event",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Lineage"
+      }
+    },
     "/v1/ingest/predictions": {
       "post": {
         "operationId": "ingest_prediction_v1_ingest_predictions_post",
@@ -502,6 +587,52 @@
           }
         },
         "summary": "Ingest Prediction"
+      }
+    },
+    "/v1/lineage/{experiment_id}": {
+      "get": {
+        "operationId": "get_lineage_v1_lineage__experiment_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "app_id",
+            "required": true,
+            "schema": {
+              "title": "App Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Lineage"
       }
     },
     "/v1/metrics/churn-risk": {
@@ -546,6 +677,76 @@
           }
         },
         "summary": "Churn Risk"
+      }
+    },
+    "/v1/metrics/churn-trajectory": {
+      "get": {
+        "description": "One subscriber's stored predictions in as-of order, with the change since the previous prediction and the\nexpected next-renewal revenue at risk (probability x renewal price). Reads the churn_risk_trajectory view.",
+        "operationId": "churn_trajectory_v1_metrics_churn_trajectory_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "app_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "App Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "model_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Churn Trajectory"
       }
     },
     "/v1/predictions/{prediction_id}": {

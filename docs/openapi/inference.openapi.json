@@ -9,6 +9,18 @@
             "title": "App Id",
             "type": "string"
           },
+          "as_of_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of At"
+          },
           "context": {
             "additionalProperties": true,
             "title": "Context",
@@ -24,11 +36,35 @@
             "title": "Model Id",
             "type": "string"
           },
+          "renewal_due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renewal Due At"
+          },
           "renewal_horizon_days": {
             "maximum": 365.0,
             "minimum": 1.0,
             "title": "Renewal Horizon Days",
             "type": "integer"
+          },
+          "renewal_price_usd": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renewal Price Usd"
           },
           "request_id": {
             "minLength": 1,
@@ -64,6 +100,18 @@
             "title": "App Id",
             "type": "string"
           },
+          "as_of_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of At"
+          },
           "churn_probability": {
             "maximum": 1.0,
             "minimum": 0.0,
@@ -95,9 +143,33 @@
             "title": "Prediction Source",
             "type": "string"
           },
+          "renewal_due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renewal Due At"
+          },
           "renewal_horizon_days": {
             "title": "Renewal Horizon Days",
             "type": "integer"
+          },
+          "renewal_price_usd": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renewal Price Usd"
           },
           "request_id": {
             "title": "Request Id",
@@ -127,6 +199,63 @@
           "churn_probability"
         ],
         "title": "ChurnPredictionResult",
+        "type": "object"
+      },
+      "DraftReadinessRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "cohort": {
+            "additionalProperties": true,
+            "title": "Cohort",
+            "type": "object"
+          },
+          "competing_live_test": {
+            "default": false,
+            "title": "Competing Live Test",
+            "type": "boolean"
+          },
+          "control_flow_published": {
+            "title": "Control Flow Published",
+            "type": "boolean"
+          },
+          "draft": {
+            "additionalProperties": true,
+            "title": "Draft",
+            "type": "object"
+          },
+          "offer_price_verified": {
+            "title": "Offer Price Verified",
+            "type": "boolean"
+          },
+          "placement_verified": {
+            "title": "Placement Verified",
+            "type": "boolean"
+          },
+          "profile_sync": {
+            "additionalProperties": true,
+            "title": "Profile Sync",
+            "type": "object"
+          },
+          "segment_verified": {
+            "title": "Segment Verified",
+            "type": "boolean"
+          },
+          "treatment_flow_published": {
+            "title": "Treatment Flow Published",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cohort",
+          "profile_sync",
+          "draft",
+          "placement_verified",
+          "segment_verified",
+          "control_flow_published",
+          "treatment_flow_published",
+          "offer_price_verified"
+        ],
+        "title": "DraftReadinessRequest",
         "type": "object"
       },
       "ExperimentAssignment": {
@@ -549,6 +678,43 @@
           }
         },
         "summary": "Predict"
+      }
+    },
+    "/v1/retention/draft/check": {
+      "post": {
+        "description": "Validate a proposed mapping locally. This route never writes to Adapty.",
+        "operationId": "check_draft_readiness_v1_retention_draft_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftReadinessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check Draft Readiness"
       }
     },
     "/v1/retention/plan": {
