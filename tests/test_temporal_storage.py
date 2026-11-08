@@ -76,6 +76,7 @@ class FakeDB:
             self.fetchone_result = (tuple(stored[name] for name in (
                 "request_id", "app_id", "user_id", "model_id", "model_version",
                 "prediction_source", "renewal_horizon_days", "churn_probability",
+                "as_of_at", "renewal_due_at", "renewal_price_usd",
             )) if stored else None)
 
     def fetchone(self):
