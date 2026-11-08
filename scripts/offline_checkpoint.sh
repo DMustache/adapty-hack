@@ -25,6 +25,7 @@ REPORT="$DEV/.agent-runtime/gates/M5-offline-$SHA.log"
   docker compose up --build -d
   docker compose exec -T analytics python -m services.analytics.import_offline
   docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT (SELECT COUNT(*) FROM offline_users), (SELECT COUNT(*) FROM offline_transactions), (SELECT COUNT(*) FROM offline_imports)"' | grep -x '50000|29794|2'
+  python scripts/check_behavior_segments.py
   python scripts/smoke_demo.py
   echo "OFFLINE CHECKPOINT PASS $SHA"
 ) 2>&1 | tee "$REPORT"
