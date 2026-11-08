@@ -9,6 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from jsonschema import Draft202012Validator
 
 pytestmark = pytest.mark.skipif(os.getenv("M7_QA_INTEGRATION") != "1", reason="requires M7 Compose stack")
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +27,22 @@ def http(method, url, payload=None):
 
 def query(path, **params):
     return http("GET", ANA + path + "?" + urllib.parse.urlencode(params))
+
+
+def test_openapi_has_typed_candidate_response():
+    document = http("GET", ANA + "/openapi.json")
+    success = document["paths"]["/v1/retention/at-risk"]["get"]["responses"]["200"]
+    assert success["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/RetentionAtRiskResponse"
+    }
+    response = document["components"]["schemas"]["RetentionAtRiskResponse"]
+    candidate = document["components"]["schemas"]["RetentionAtRiskCandidate"]
+    assert {"counts", "subscribers", "reference_time"} <= set(response["required"])
+    assert {"prediction_id", "prediction_source", "plan_type", "as_of_at", "predicted_at",
+            "renewal_due_at", "churn_probability", "renewal_price_usd"} <= set(candidate["required"])
+    frozen = json.loads((ROOT / "contracts/schemas/retention-at-risk-response.schema.json").read_text())
+    Draft202012Validator.check_schema(frozen)
+    Draft202012Validator(frozen).validate(query("/v1/retention/at-risk", app_id="m7-contract-check"))
 
 
 def test_fixed_model_plan_propagation_and_conflict():
