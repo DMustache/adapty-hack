@@ -59,6 +59,30 @@ def main():
     })
     assert proposal["plan_source"] == "scenario_experiment" and not proposal["modeled_discount_uplift"]
 
+    first, first_case = predictions[0]
+    example_dir = ROOT / "contracts/examples"
+    cohort = json.loads((example_dir / "approved-cohort.json").read_text())
+    sync = json.loads((example_dir / "profile-sync.json").read_text())
+    draft = json.loads((example_dir / "draft-test.json").read_text())
+    for record in (cohort, sync):
+        record.update(user_id=first["user_id"], prediction_id=first["prediction_id"],
+                      as_of_at=first_case["as_of_at"].replace("+00:00", "Z"),
+                      renewal_due_at=first_case["renewal_due_at"].replace("+00:00", "Z"),
+                      cohort_id=experiment_id)
+    cohort["policy_version"] = f"{experiment_id}-v1"
+    sync.update(sync_status="acknowledged", attribute_value=experiment_id,
+                propagation_checked_at="2026-11-08T12:02:00Z")
+    draft.update(experiment_id=experiment_id, cohort_id=experiment_id,
+                 policy_version=cohort["policy_version"])
+    readiness = {"cohort": cohort, "profile_sync": sync, "draft": draft,
+                 "placement_verified": True, "segment_verified": True,
+                 "control_flow_published": True, "treatment_flow_published": True,
+                 "offer_price_verified": True, "competing_live_test": False}
+    draft_check = request("POST", INF + "/v1/retention/draft/check", readiness)
+    assert draft_check["status"] == "ready_for_operator_review" and not draft_check["writes_to_adapty"]
+    assert request("POST", INF + "/v1/retention/draft/check",
+                   {**readiness, "treatment_flow_published": False})["status"] == "not_ready"
+
     kinds = ("actual-assignment", "actual-exposure", "next-renewal-outcome")
     examples = {kind: json.loads((ROOT / "contracts/examples" / f"{kind}.json").read_text()) for kind in kinds}
     for index, (prediction, case) in enumerate(predictions):
@@ -111,6 +135,7 @@ def main():
               "model_version": fixture["model_version"], "model_sha256": EXPECTED_SHA}
     assert digest() == before, "offer policy review changed churn model"
     result = {"experiment_id": experiment_id, "proposal_source": proposal["plan_source"],
+              "draft_check": draft_check,
               "lineage_counts": counts, "pending_unexposed": 1, "demo_offer_policy": policy,
               "model_sha256_before": before, "model_sha256_after": digest()}
     if args.output:
