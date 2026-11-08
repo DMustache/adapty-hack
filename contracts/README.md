@@ -10,6 +10,10 @@ Schemas are generated from `shared/contracts/models.py` by Lead using `python sc
 
 API endpoint contracts: Inference `POST /v1/predict`, `POST /v1/retention/plan`; Analytics `POST /v1/ingest/predictions`, `POST /v1/ingest/experiments`, `GET /v1/experiments/{id}`. API docs `/docs`.
 
+## M7 read-only candidate bridge
+
+Prediction request/result schemas accept optional `plan_type` (`weekly` or `monthly`); older records remain valid. The fixed temporal model derives this field from its validated `features.plan` and rejects a conflicting explicit value. Analytics `GET /v1/retention/at-risk?app_id=lumen` defaults to `lumen-temporal-catboost` version `1.0.0` and returns planner-ready candidate records with prediction ID, source, both UTC timestamps, plan, probability, and renewal price. `as_of` must be UTC when supplied. Without it, the reference is the latest stored eligible `predicted_at` (the data clock, not a claim of current freshness). For a selected subscriber, the newest prediction with `as_of_at <= reference` and `predicted_at <= reference` wins; a due or stale latest prediction excludes that subscriber, with no fallback. Rows with absent `plan_type` are counted but omitted from candidates. The response is read-only and does not imply an observed discount effect or a live Adapty cohort.
+
 ## M5 temporal and A/B lifecycle contracts
 
 The new `temporal-churn-request.schema.json` narrows the existing v1 prediction
