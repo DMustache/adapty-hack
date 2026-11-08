@@ -100,7 +100,7 @@ def main():
 
     plan = request("POST", INF + "/v1/retention/plan", {
         "app_id": app_id, "experiment_id": experiment_id, "budget_usd": 30,
-        "control_share": 0.34, "discounts": [0.20], "random_seed": 11,
+        "control_share": 0.34, "discounts": [0.05], "random_seed": 11,
         "candidates": [{"user_id": uid, "churn_probability": pred["churn_probability"],
                         "renewal_price_usd": pred["renewal_price_usd"], "plan_type": pred["plan_type"]}
                        for uid, (pred, _) in latest.items()],
@@ -108,6 +108,7 @@ def main():
     assert plan["modeled_discount_uplift"] is False
     assert {arm["user_id"] for arm in plan["assignments"]} == set(latest)
     assert any(arm["arm"] == "control" for arm in plan["assignments"])
+    assert {arm["arm"] for arm in plan["assignments"]} == {"control", "discount_5pct"}, plan["assignments"]
     print("PLAN:", json.dumps({"arms": {arm["arm"]: sum(a["arm"] == arm["arm"] for a in plan["assignments"])
                                            for arm in plan["assignments"]},
                                "max_exposure_usd": plan["max_allocated_discount_exposure_usd"],
