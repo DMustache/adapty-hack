@@ -1,0 +1,360 @@
+{
+ "label": "SIMULATED \u2013 pipeline check, not a result",
+ "simulated": true,
+ "info": {
+  "observation_cutoff": "2026-11-03T00:07:04+00:00",
+  "test_start": "2026-10-05T00:07:04+00:00",
+  "train_rows": 61528,
+  "test_rows": 28020,
+  "usage_coverage": {
+   "train": {
+    "snapshots": 61528,
+    "with_usage": 48542,
+    "share_with_usage": 0.7889416200754128,
+    "subscribers_with_usage": 1927
+   },
+   "test": {
+    "snapshots": 28020,
+    "with_usage": 22136,
+    "share_with_usage": 0.7900071377587438,
+    "subscribers_with_usage": 1683
+   }
+  }
+ },
+ "models": {
+  "temporal": {
+   "features": 23,
+   "params": {
+    "depth": 3,
+    "iterations": 100,
+    "learning_rate": 0.03,
+    "l2_leaf_reg": 10
+   },
+   "cv_log_loss": [
+    0.2538123041786172,
+    0.25765969201904504,
+    0.25453037503404474,
+    0.2633103936091014,
+    0.25650583394093635,
+    0.2752914475851118
+   ],
+   "fold_brier": [
+    0.06646758800098003,
+    0.06632211309570124,
+    0.06790821459392732
+   ],
+   "test": {
+    "n": 28020,
+    "churn_rate": 0.10067808708065668,
+    "brier": 0.060107658707638865,
+    "brier_base_rate": 0.09054200986243638,
+    "log_loss": 0.23367307746007585,
+    "pr_auc": 0.5178365488859857,
+    "roc_auc": 0.7669106201062794,
+    "ece": 0.01594641750857416,
+    "calib_slope": 1.3811558448494332,
+    "calib_intercept": 0.6335014604267453,
+    "rev_capture_10": 0.455519282434414,
+    "rev_capture_20": 0.5667408779046741,
+    "calibration": [
+     {
+      "bin": 1,
+      "n": 2802,
+      "mean_predicted": 0.044677191094647815,
+      "observed": 0.027123483226266953
+     },
+     {
+      "bin": 2,
+      "n": 2802,
+      "mean_predicted": 0.05204742081249718,
+      "observed": 0.03140613847251963
+     },
+     {
+      "bin": 3,
+      "n": 2802,
+      "mean_predicted": 0.0578783754703266,
+      "observed": 0.04068522483940043
+     },
+     {
+      "bin": 4,
+      "n": 2802,
+      "mean_predicted": 0.06615572092970322,
+      "observed": 0.04925053533190578
+     },
+     {
+      "bin": 5,
+      "n": 2802,
+      "mean_predicted": 0.07931170962047977,
+      "observed": 0.06245538900785153
+     },
+     {
+      "bin": 6,
+      "n": 2802,
+      "mean_predicted": 0.09132841145805733,
+      "observed": 0.0667380442541042
+     },
+     {
+      "bin": 7,
+      "n": 2802,
+      "mean_predicted": 0.10260056555281992,
+      "observed": 0.09100642398286937
+     },
+     {
+      "bin": 8,
+      "n": 2802,
+      "mean_predicted": 0.11156520739634113,
+      "observed": 0.099214846538187
+     },
+     {
+      "bin": 9,
+      "n": 2802,
+      "mean_predicted": 0.12135895570268222,
+      "observed": 0.10278372591006424
+     },
+     {
+      "bin": 10,
+      "n": 2802,
+      "mean_predicted": 0.4393214878547531,
+      "observed": 0.43611705924339755
+     }
+    ]
+   },
+   "by_horizon": [
+    {
+     "days_until_renewal": "(-0.001, 1.0]",
+     "n": 3906,
+     "churn_rate": 0.09626216077828981,
+     "brier": 0.02502034351921384,
+     "pr_auc": 0.8029753927677452
+    },
+    {
+     "days_until_renewal": "(1.0, 2.0]",
+     "n": 3782,
+     "churn_rate": 0.09941829719725014,
+     "brier": 0.039243902514872024,
+     "pr_auc": 0.685977633665507
+    },
+    {
+     "days_until_renewal": "(2.0, 3.0]",
+     "n": 4380,
+     "churn_rate": 0.09680365296803653,
+     "brier": 0.0462311779192454,
+     "pr_auc": 0.6159764768354128
+    },
+    {
+     "days_until_renewal": "(3.0, 5.0]",
+     "n": 6949,
+     "churn_rate": 0.1066340480644697,
+     "brier": 0.07337547755027286,
+     "pr_auc": 0.3986451599662699
+    },
+    {
+     "days_until_renewal": "(5.0, 8.0]",
+     "n": 7035,
+     "churn_rate": 0.10774697938877044,
+     "brier": 0.0903515019326989,
+     "pr_auc": 0.2034970707385653
+    },
+    {
+     "days_until_renewal": "(8.0, 31.0]",
+     "n": 1968,
+     "churn_rate": 0.0741869918699187,
+     "brier": 0.045764800310502,
+     "pr_auc": 0.4672223195599852
+    }
+   ]
+  },
+  "temporal_usage": {
+   "features": 31,
+   "params": {
+    "depth": 6,
+    "iterations": 100,
+    "learning_rate": 0.03,
+    "l2_leaf_reg": 10
+   },
+   "cv_log_loss": [
+    0.24909084394349387,
+    0.24792234868840116,
+    0.24774490403903612,
+    0.25144610519652383,
+    0.24670266662911278,
+    0.2594153548260684
+   ],
+   "fold_brier": [
+    0.06562408336862256,
+    0.06468392492916519,
+    0.06672747474078997
+   ],
+   "test": {
+    "n": 28020,
+    "churn_rate": 0.10067808708065668,
+    "brier": 0.058810194197242746,
+    "brier_base_rate": 0.09054200986243638,
+    "log_loss": 0.22486744212246007,
+    "pr_auc": 0.5551837716935322,
+    "roc_auc": 0.8099144703938289,
+    "ece": 0.014697983627734227,
+    "calib_slope": 1.4226098371309592,
+    "calib_intercept": 0.7218203794489083,
+    "rev_capture_10": 0.4881784708917122,
+    "rev_capture_20": 0.5984303252807004,
+    "calibration": [
+     {
+      "bin": 1,
+      "n": 2802,
+      "mean_predicted": 0.02777457888560804,
+      "observed": 0.006780870806566738
+     },
+     {
+      "bin": 2,
+      "n": 2802,
+      "mean_predicted": 0.03987390714150442,
+      "observed": 0.019271948608137045
+     },
+     {
+      "bin": 3,
+      "n": 2802,
+      "mean_predicted": 0.050722455095552066,
+      "observed": 0.031049250535331904
+     },
+     {
+      "bin": 4,
+      "n": 2802,
+      "mean_predicted": 0.06018608662667274,
+      "observed": 0.041042112776588154
+     },
+     {
+      "bin": 5,
+      "n": 2802,
+      "mean_predicted": 0.07118260271864327,
+      "observed": 0.054960742326909354
+     },
+     {
+      "bin": 6,
+      "n": 2802,
+      "mean_predicted": 0.0835791601108832,
+      "observed": 0.07316202712348323
+     },
+     {
+      "bin": 7,
+      "n": 2802,
+      "mean_predicted": 0.09706808469548366,
+      "observed": 0.08458244111349036
+     },
+     {
+      "bin": 8,
+      "n": 2802,
+      "mean_predicted": 0.11262379875688285,
+      "observed": 0.10813704496788008
+     },
+     {
+      "bin": 9,
+      "n": 2802,
+      "mean_predicted": 0.13332734680230934,
+      "observed": 0.11491791577444682
+     },
+     {
+      "bin": 10,
+      "n": 2802,
+      "mean_predicted": 0.46833034729709666,
+      "observed": 0.47287651677373305
+     }
+    ]
+   },
+   "by_horizon": [
+    {
+     "days_until_renewal": "(-0.001, 1.0]",
+     "n": 3906,
+     "churn_rate": 0.09626216077828981,
+     "brier": 0.024200410526472965,
+     "pr_auc": 0.8505702174005514
+    },
+    {
+     "days_until_renewal": "(1.0, 2.0]",
+     "n": 3782,
+     "churn_rate": 0.09941829719725014,
+     "brier": 0.03812397925853004,
+     "pr_auc": 0.7394709858598189
+    },
+    {
+     "days_until_renewal": "(2.0, 3.0]",
+     "n": 4380,
+     "churn_rate": 0.09680365296803653,
+     "brier": 0.04475602208523082,
+     "pr_auc": 0.6740632866001326
+    },
+    {
+     "days_until_renewal": "(3.0, 5.0]",
+     "n": 6949,
+     "churn_rate": 0.1066340480644697,
+     "brier": 0.07157581011336778,
+     "pr_auc": 0.4581577753868792
+    },
+    {
+     "days_until_renewal": "(5.0, 8.0]",
+     "n": 7035,
+     "churn_rate": 0.10774697938877044,
+     "brier": 0.08898801854925519,
+     "pr_auc": 0.2514901738352467
+    },
+    {
+     "days_until_renewal": "(8.0, 31.0]",
+     "n": 1968,
+     "churn_rate": 0.0741869918699187,
+     "brier": 0.04558310804342682,
+     "pr_auc": 0.478844190473605
+    }
+   ]
+  }
+ },
+ "brier_gain_usage_vs_baseline": {
+  "estimate": 0.0012974645103961103,
+  "ci95": [
+   0.0008779737317911193,
+   0.0016903948343420724
+  ]
+ },
+ "subsets": {
+  "with_usage": {
+   "temporal": {
+    "n": 22136,
+    "brier": 0.05859382540759499
+   },
+   "temporal_usage": {
+    "n": 22136,
+    "brier": 0.05694082141897579
+   }
+  },
+  "without_usage": {
+   "temporal": {
+    "n": 5884,
+    "brier": 0.06580280043601602
+   },
+   "temporal_usage": {
+    "n": 5884,
+    "brier": 0.06584289912921376
+   }
+  }
+ },
+ "acceptance_rule": {
+  "better_in_every_fold": true,
+  "ci_above_zero": true,
+  "passes": true
+ },
+ "verdict": "SIMULATED \u2013 pipeline check, not a result. The usage features were computed from synthetic activity, so this shows only that the pipeline runs end to end; it says nothing about real accuracy. Keep the deployed model.",
+ "scenario": "signal",
+ "usage_match": {
+  "rows_read": 245521,
+  "rows_dropped_invalid": 0,
+  "rows_kept": 245521,
+  "events": 245521,
+  "event_users": 3081,
+  "matched_users": 3081,
+  "unmatched_users": 0,
+  "matched_events": 245521,
+  "unmatched_events": 0,
+  "subscribers_known": 50000,
+  "subscribers_with_events": 3081,
+  "unmatched_examples": []
+ }
+}

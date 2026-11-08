@@ -25,6 +25,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from ml.usage.features import USAGE_FEATURES, usage_features
+
 PLANS = ("weekly", "monthly")
 CADENCE_DAYS = {"weekly": 1, "monthly": 3}
 OUTCOME_MARGIN_DAYS = 1
@@ -63,6 +65,10 @@ FEATURE_SETS = {
 # candidate set: deployed temporal features + subscription-history features. Evaluated in ablation_history.py;
 # not deployed: none of the groups improved the model on this data (2026-11-08).
 FEATURE_SETS["temporal_extended"] = FEATURE_SETS["temporal"] + HISTORY_FEATURES
+# candidate set: the deployed 23 temporal features (unchanged, the baseline) + app-usage features from Firebase /
+# Amplitude exports (ml/usage). Usage features are optional: null when a subscriber has no usage history. Trained and
+# compared by ml/temporal_churn/train_usage.py; not deployed.
+FEATURE_SETS["temporal_usage"] = FEATURE_SETS["temporal"] + USAGE_FEATURES
 EVALUATED_MODELS = ("static", "temporal_behaviour", "temporal")   # trained/compared by train.py and ablation.py
 CATEGORICAL = set(STATIC_CATEGORICAL)
 BOOLEAN = set(STATIC_BOOLEAN + STATUS_BOOLEAN + HISTORY_BOOLEAN)
@@ -234,6 +240,24 @@ def _billing_counts(s: pd.DataFrame, tx: pd.DataFrame) -> np.ndarray:
           (m["billing_issue_detected_at"] > m["as_of_at"] - pd.Timedelta(days=BILLING_LOOKBACK_DAYS))
     counts = m[hit].groupby("row").size()
     return counts.reindex(range(len(s)), fill_value=0).to_numpy(dtype=float)
+
+
+def add_usage_features(snaps: pd.DataFrame, events: pd.DataFrame | None, user_col: str = "subscriber_id",
+                       tracked_since: dict | None = None) -> pd.DataFrame:
+    """Copy of `snaps` with USAGE_FEATURES added (point-in-time, events strictly before each as_of_at).
+
+    events: usage events already matched to snapshot user ids (ml.usage.loader.match adds `subscriber_id`).
+    None or empty -> every usage feature is null, so the snapshots still score with the usage model.
+    """
+    out = snaps.copy()
+    if events is None or events.empty:
+        for f in USAGE_FEATURES:
+            out[f] = np.nan
+        return out
+    feats = usage_features(snaps, events, user_col=user_col, tracked_since=tracked_since)
+    for f in USAGE_FEATURES:
+        out[f] = feats[f].to_numpy()
+    return out
 
 
 def feature_record(row: pd.Series | dict, feature_set: str = "temporal") -> dict:

@@ -1,0 +1,8 @@
+{"user_id": "lumen_261329_00001", "event_type": "session_start", "event_time": "2026-10-09 12:00:00.000000", "$insert_id": "a1"}
+{"user_id": "lumen_261329_00001", "event_type": "session_start", "event_time": "2026-10-05 12:00:00.000000", "$insert_id": "a2"}
+{"user_id": "lumen_261329_00001", "event_type": "session_start", "event_time": "2026-10-01 12:00:00.000000", "$insert_id": "a3"}
+{"user_id": "lumen_261329_00001", "event_type": "photo_edited", "event_time": "2026-10-09 13:00:00.000000", "$insert_id": "a4"}
+{"user_id": "lumen_261329_00001", "event_type": "session_start", "event_time": "2026-10-10 12:00:00.000000", "$insert_id": "a5"}
+{"user_id": "lumen_261329_00001", "event_type": "session_start", "event_time": "2026-10-11 08:00:00.000000", "$insert_id": "a6"}
+{"user_id": "lumen_261329_00001", "event_type": "session_start", "event_time": "2026-09-05 12:00:00.000000", "$insert_id": "a7"}
+{"user_id": null, "event_type": "session_start", "event_time": "2026-10-09 12:00:00.000000", "$insert_id": "a8"}

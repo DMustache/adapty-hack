@@ -158,14 +158,19 @@ def trajectory_summary(test: pd.DataFrame, p: np.ndarray) -> list[dict]:
 
 
 # ---------------------------------------------------------------- export
-def export(model: CatBoostClassifier, features: list[str], meta: dict) -> Path:
-    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
-    path = ARTIFACT_DIR / "model.cbm"
+def export(model: CatBoostClassifier, features: list[str], meta: dict, artifact_dir: Path | None = None,
+           model_id: str = MODEL_ID, model_version: str = MODEL_VERSION, optional: list[str] | tuple = ()) -> Path:
+    """Write model.cbm, its SHA-256 and metadata.json. Defaults = the deployed temporal model. `optional` features may
+    be omitted or null in a request (e.g. usage features of a subscriber without usage history)."""
+    artifact_dir = Path(artifact_dir or ARTIFACT_DIR)
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    path = artifact_dir / "model.cbm"
     model.save_model(str(path), format="cbm")
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    (ARTIFACT_DIR / "model.cbm.sha256").write_text(f"{digest}  model.cbm\n", encoding="utf-8")
-    schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", "title": f"{MODEL_ID} features",
-              "type": "object", "additionalProperties": False, "required": features, "properties": {}}
+    (artifact_dir / "model.cbm.sha256").write_text(f"{digest}  model.cbm\n", encoding="utf-8")
+    schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", "title": f"{model_id} features",
+              "type": "object", "additionalProperties": False,
+              "required": [f for f in features if f not in optional], "properties": {}}
     for f in features:
         if f in S.CATEGORICAL:
             schema["properties"][f] = {"type": ["string", "null"]}
@@ -173,11 +178,11 @@ def export(model: CatBoostClassifier, features: list[str], meta: dict) -> Path:
             schema["properties"][f] = {"type": "boolean"}
         else:
             schema["properties"][f] = {"type": ["number", "null"]}
-    metadata = {"model_id": MODEL_ID, "model_version": MODEL_VERSION, "format": "catboost-cbm",
+    metadata = {"model_id": model_id, "model_version": model_version, "format": "catboost-cbm",
                 "sha256": digest, "features": features,
                 "categorical_features": [f for f in features if f in S.CATEGORICAL],
                 "boolean_features": [f for f in features if f in S.BOOLEAN], "input_schema": schema, **meta}
-    (ARTIFACT_DIR / "metadata.json").write_text(json.dumps(metadata, indent=1, default=str), encoding="utf-8")
+    (artifact_dir / "metadata.json").write_text(json.dumps(metadata, indent=1, default=str), encoding="utf-8")
     return path
 
 

@@ -18,6 +18,8 @@ from services.inference.app.economics import make_plan
 logger = logging.getLogger("retention")
 app = FastAPI(title="Smart Retention Offers — Inference & Planning", version="0.2.0")
 ADAPTERS = {MockChurnAdapter.model_id: MockChurnAdapter()}
+# point-in-time models: same UTC cutoff/renewal rules (the usage model is the deployed one + optional usage features)
+TEMPORAL_MODEL_IDS = {"lumen-temporal-catboost", "lumen-temporal-usage-catboost"}
 SCHEMA_DIR = Path(__file__).resolve().parents[3] / "contracts" / "schemas"
 
 
@@ -52,7 +54,18 @@ def _register_temporal_model() -> None:
     ADAPTERS[adapter.model_id] = adapter
 
 
+def _register_temporal_usage_model() -> None:
+    """Optional second model with app-usage features; only when its artifact is installed. Never replaces the
+    deployed model: callers opt in with its model_id. A broken installation must fail startup."""
+    from services.inference.app.adapters.temporal_usage_catboost import DEFAULT_DIR, TemporalUsageCatBoostAdapter
+    if not DEFAULT_DIR.exists() and not os.getenv("TEMPORAL_USAGE_MODEL_DIR"):
+        return
+    adapter = TemporalUsageCatBoostAdapter()
+    ADAPTERS[adapter.model_id] = adapter
+
+
 _register_temporal_model()
+_register_temporal_usage_model()
 for adapter in ADAPTERS.values():
     adapter.load()
 
@@ -139,7 +152,7 @@ async def predict(request: ChurnPredictionRequest):
         request.as_of_at, request.renewal_due_at, request.renewal_price_usd
     )
     plan_type = request.plan_type
-    if request.model_id == "lumen-temporal-catboost":
+    if request.model_id in TEMPORAL_MODEL_IDS:
         context = request.context
         if set(context) - {"as_of_at", "renewal_due_at", "feature_source_ref"}:
             raise HTTPException(status_code=422, detail="Unknown temporal context field")
