@@ -55,6 +55,8 @@ mise run down
 
 See the [API demo guide](docs/API_DEMO.md) for request and response examples, checked-in OpenAPI snapshots, and how these custom methods relate to Adapty.
 
+For the exact route flow, model and event contracts, provenance of every Grafana panel, and a staged presentation command, read the [Russian system and dashboard guide](docs/SYSTEM_FLOW_AND_DASHBOARDS_RU.md).
+
 The `smoke_demo.py` check uses mock fixture risks for 12 users; `scripts/m5_demo.py` shows the fixed model with synthetic inputs and simulated experiment events. PostgreSQL initialization scripts run on **new volumes only**; analytics applies later migrations at startup. If replacing an old demo database, inspect the volume before deleting it (`docker compose down -v` is destructive).
 
 ### Offline hackathon dataset
