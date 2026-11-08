@@ -7,7 +7,7 @@
 ```text
 External churn researcher -> trusted ModelAdapter -> Inference/Planning API :8001
                                                  |        |
-                                       static mock now   break-even / budget experiment planner
+                              mock + fixed CatBoost      break-even / budget experiment planner
                                                  |        |
                                                  +-- structured results --> Analytics API :8002
                                                                          |
@@ -16,7 +16,7 @@ External churn researcher -> trusted ModelAdapter -> Inference/Planning API :800
                                                               Grafana (read-only) :3000
 ```
 
-Service A loads the eventual model through a narrow adapter, exposes `/v1/predict`, and offers `/v1/retention/plan` using *non-ML algebra*. Service B stores prediction/experiment snapshots and exposes queried data. PostgreSQL/Grafana are infrastructure, not services developed by agents.
+Service A loads the fixed external model or the separate mock through a narrow adapter, exposes `/v1/predict`, and offers `/v1/retention/plan` using *non-ML algebra*. Service B stores prediction/experiment snapshots and exposes queried data. PostgreSQL/Grafana are infrastructure, not services developed by agents.
 
 ### What is / is not modeled
 
@@ -49,11 +49,13 @@ mise run down
 
 - Inference/Planner OpenAPI: `http://localhost:8001/docs`
 - Analytics OpenAPI: `http://localhost:8002/docs`
-- Grafana: `http://localhost:3000/d/smart-retention`
+- Grafana model inventory: `http://localhost:3000/d/model-health`
+- Grafana risk and simulated lineage: `http://localhost:3000/d/churn-risk-trajectory`
+- Grafana offline campaign fields: `http://localhost:3000/d/smart-retention`
 
 See the [API demo guide](docs/API_DEMO.md) for request and response examples, checked-in OpenAPI snapshots, and how these custom methods relate to Adapty.
 
-Demo uses mock fixture risks for 12 users. All outputs are clearly labeled. PostgreSQL initialization scripts run on **new volumes only**; if replacing the old Demand Score local demo with the same database volume, explicitly remove the **demo-only** old volume (`docker compose down -v` — destructive) before starting.
+The `smoke_demo.py` check uses mock fixture risks for 12 users; `scripts/m5_demo.py` shows the fixed model with synthetic inputs and simulated experiment events. PostgreSQL initialization scripts run on **new volumes only**; analytics applies later migrations at startup. If replacing an old demo database, inspect the volume before deleting it (`docker compose down -v` is destructive).
 
 ### Offline hackathon dataset
 
@@ -86,4 +88,4 @@ See `.workflow/README.md`, `docs/ARCHITECTURE.md`, and `docs/MODEL_HANDOFF.md`.
 
 ### Project state
 
-This is a **runnable synthetic hackathon demo**. It includes the unchanged, externally supplied `lumen-temporal-catboost` 1.0.0 artifact alongside a separate mock adapter, plus simulated experiment lineage. The demo does not establish real-customer calibration, measured discount uplift, or a production Adapty integration. See [M5 demo](docs/M5_DEMO.md) and [M6 data requirements](docs/M6_DATA_REQUIREMENTS.md); container E2E depends on Docker availability.
+This is a **runnable synthetic hackathon demo**. It includes the unchanged, externally supplied `lumen-temporal-catboost` 1.0.0 artifact alongside a separate mock adapter, plus simulated experiment lineage. The demo does not establish real-customer calibration, measured discount uplift, or a production Adapty integration. See [M5 demo](docs/M5_DEMO.md), the [M6 walkthrough](docs/M6_WALKTHROUGH_RU.md), and [M6 data requirements](docs/M6_DATA_REQUIREMENTS.md); container E2E depends on Docker availability.

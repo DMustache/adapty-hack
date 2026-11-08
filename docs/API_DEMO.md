@@ -1,8 +1,10 @@
-# Smart Retention Offers API demo
+# Smart Retention Offers API demo (M4 mock path)
+
+This is the preserved M4 mock walkthrough. The current M5/M6 path also loads the fixed `lumen-temporal-catboost` 1.0.0 adapter for synthetic inputs; see [M5 demo](M5_DEMO.md) and the [M6 walkthrough](M6_WALKTHROUGH_RU.md).
 
 This project adds **two local APIs alongside Adapty**. They do not replace the Adapty SDK, dashboard, or server-side API. Adapty manages subscription products, paywalls or flows, placements, and live A/B tests. Our APIs accept a churn probability, calculate a reviewable retention experiment scenario, and store the inputs and proposal for inspection. There is no live Adapty write path in this milestone.
 
-Adapty also has [A/B test predictions](https://adapty.io/docs/predictions-in-ab-tests), which forecast long-term revenue for test variants. That is a different prediction target from this project's **per-subscriber churn probability**. The current churn probability comes from a fixed mock fixture; an external model has not been loaded.
+Adapty also has [A/B test predictions](https://adapty.io/docs/predictions-in-ab-tests), which forecast long-term revenue for test variants. That is a different prediction target from this project's **per-subscriber churn probability**. The commands on this page use the fixed mock fixture; the current service also loads the separate fixed external model.
 
 ## OpenAPI
 
@@ -17,8 +19,8 @@ The snapshots describe the tested M4 implementation. The live URLs reflect the r
 
 | Our method | Input → output | Purpose |
 | --- | --- | --- |
-| `GET :8001/v1/models` and `GET :8001/v1/models/{model_id}/schema` | Model ID → available adapter and feature schema | Discover the mock adapter now; provide a narrow boundary for a separately delivered model later. |
-| `POST :8001/v1/predict` | Subscriber ID, model ID, horizon, features → labeled probability, model version, prediction ID | Record one risk input with provenance. The mock returns fixture values; this service does not train or infer a churn model. It forwards the result to analytics. |
+| `GET :8001/v1/models` and `GET :8001/v1/models/{model_id}/schema` | Model ID → available adapter and feature schema | Discover the mock and fixed external adapters and their schemas. |
+| `POST :8001/v1/predict` | Subscriber ID, model ID, horizon, features → labeled probability, model version, prediction ID | Record one risk input with provenance. The mock returns fixture values; the fixed external adapter scores synthetic model inputs. The service does not train a model. It forwards the result to analytics. |
 | `POST :8001/v1/retention/plan` | Candidate risks, prices, budget, discounts → proposed arms, maximum exposure, break-even hurdles | Compare hypothetical economics and preserve a control arm before an operator designs a real test. It forwards the proposal to analytics; it does not activate offers. |
 | `POST :8002/v1/ingest/predictions` and `GET :8002/v1/predictions/{id}` | Prediction → stored prediction | Internal persistence and readback; the inference API normally calls ingest. |
 | `POST :8002/v1/ingest/experiments` and `GET :8002/v1/experiments/{id}` | Proposal → immutable stored proposal | Internal persistence and review; a changed retry with the same experiment ID is rejected. |
@@ -49,6 +51,6 @@ jq -n --arg id "$DEMO_ID" '{app_id:"lumen-demo", experiment_id:$id, budget_usd:2
 curl -sS "http://localhost:8002/v1/experiments/$DEMO_ID" | jq
 ```
 
-Inspect `assignments`, `max_allocated_discount_exposure_usd`, `unallocated_budget_usd`, and `required_absolute_uplift`. The `modeled_discount_uplift` field is `false`; the hurdle is algebraic, not a measured treatment effect. Change `experiment_id` when changing a proposal because stored proposals are immutable. Open <http://localhost:3000/d/smart-retention> to see the stored scenario in Grafana.
+Inspect `assignments`, `max_allocated_discount_exposure_usd`, `unallocated_budget_usd`, and `required_absolute_uplift`. The `modeled_discount_uplift` field is `false`; the hurdle is algebraic, not a measured treatment effect. Change `experiment_id` when changing a proposal because stored proposals are immutable. The proposal is visible through the Analytics readback above; the current `smart-retention` Grafana dashboard shows offline campaign fields, not this proposal. To inspect stored mock predictions, open <http://localhost:3000/d/churn-risk-trajectory> and select `Prediction source=mock`.
 
 For a complete 12-user run, execute `python scripts/smoke_demo.py` in the Compose project's directory. It generates unique IDs and checks the prediction, persistence, planning, and dashboard path. Its success message does not mean offers were delivered or Adapty was changed.

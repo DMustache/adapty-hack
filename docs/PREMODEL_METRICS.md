@@ -1,5 +1,7 @@
 # Pre-model dashboard and test contract
 
+Historical M5 infrastructure contract, written before the fixed model was integrated. Its statements about an absent model describe that checkpoint, not the current service. See [M5 demo](M5_DEMO.md) for the current synthetic model path.
+
 This is the M5 infrastructure wave that can run before an external churn model arrives. It uses persisted `churn_predictions` and immutable `retention_experiments` only. Seeded `prediction_source = external` rows are **test fixtures**, not evidence that an external model is loaded.
 
 ## Prediction view
