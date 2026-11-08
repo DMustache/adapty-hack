@@ -20,6 +20,8 @@ services:
       dockerfile: services/analytics/Dockerfile
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-adapty_demo}:${POSTGRES_PASSWORD:-demo_change_me}@postgres:5432/${POSTGRES_DB:-adapty_demo}
+    volumes:
+      - ${OFFLINE_DATA_DIR:-./data}:/seed-data:ro
     ports:
       - "127.0.0.1:8002:8000"
     depends_on:
