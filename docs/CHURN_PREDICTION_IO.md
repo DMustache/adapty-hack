@@ -1,12 +1,14 @@
 # Churn predictor I/O and Adapty A/B handoff
 
 This is the target integration for the external churn predictor. The application
-services do not train or update model weights. `origin/model-implementation` at
-`253b5bd65cd71c69c5b2308ae4e0b097a2e31095` currently contains only
-`discount_advisor/`, a synthetic-data cohort experiment advisor. It has no
-churn inference entrypoint, trained weights, or per-subscriber churn output.
-That branch cannot yet be plugged into the interface below; the external ML
-owner must deliver the churn predictor described in `MODEL_HANDOFF.md`.
+services do not train or update model weights. `origin/model-implementation`
+contains `discount_advisor/`, a synthetic-data cohort experiment advisor, not
+a churn predictor. `origin/temporal-churn` at
+`7dc9a9692798111e9ec4fb8af3d8a97aee8dae66` contains the CatBoost
+predictor, a checksummed artifact, adapter, fixture and evaluation report.
+The deployable `lumen-temporal-catboost` 1.0.0 artifact was introduced by
+`7475a89`; the later history-feature ablation did not change it. Treat this
+version as a candidate until the external ML owner accepts it under M5-ML-001.
 
 ## Predictor input and output
 
@@ -28,9 +30,15 @@ one decision time:
 }
 ```
 
-The exact feature keys, types, null policy, horizon semantics and model ID
-belong to the external ML delivery. Do not copy `discount_advisor` install or
-receipt aggregates into these features. The trusted `ModelAdapter` loads the
+For the temporal candidate, the 23 deployed feature keys, types and null policy
+are in `services/inference/models/temporal_catboost/metadata.json` on that
+branch. Its target is failure to renew at the next eligible renewal for any
+reason, including billing failure and refund. The ML owner must confirm this
+target and calibration before activation. A temporal request also supplies
+UTC `as_of_at`, `renewal_due_at` and positive `renewal_price_usd`;
+`renewal_horizon_days` describes the same next renewal, not a separate
+fixed-window target. Preserve existing v1 requests for other models. Do not
+copy `discount_advisor` aggregates into these features. The trusted `ModelAdapter` loads the
 approved model version and validates `features` against its input schema. Its
 `predict(user_id, features, context)` returns one finite calibrated probability
 in `[0,1]`; if calibration is absent, the external owner must provide a new
@@ -56,10 +64,13 @@ The inference service returns and persists:
 
 Retries keep `request_id` and `prediction_id`; conflicting feature/model
 content must be rejected rather than silently replacing an earlier prediction.
-All timestamps are UTC. The owner must also supply model metadata: trusted
-artifact or endpoint, checksum, runtime, version, input schema, target label,
-training-data cutoff, calibration report and deterministic fixture. A candidate
-version may be evaluated separately but must not replace the active version.
+All timestamps are UTC. The candidate supplies a CatBoost `.cbm` artifact with
+SHA256 `4f3fd0acc9944b19fd0743d3c0b8a8863b8d59e1e81065c5a0940d5b9fad1491`,
+metadata, evaluation report and deterministic fixture. M5-ML-001 must confirm
+runtime, target and calibration. A candidate may be evaluated separately but
+must not replace the active version. Its offline replay script demonstrates
+synthetic snapshots; M5-BE-004 owns a cutoff-safe request builder from approved
+event sources for the running service.
 
 ## Prediction to experiment
 
