@@ -1,7 +1,6 @@
 -- Temporal churn predictions: repeated, immutable predictions per subscriber, each tied to the instant its
 -- features describe (as_of_at) and the renewal it is about (renewal_due_at).
--- Init scripts only run on a fresh database volume. For an existing volume, run this file once by hand:
---   docker compose exec -T postgres psql -U adapty_demo -d adapty_demo < postgres/init/003-temporal-predictions.sql
+-- Analytics applies this idempotent migration at startup, including on existing volumes.
 
 ALTER TABLE churn_predictions ADD COLUMN IF NOT EXISTS as_of_at TIMESTAMPTZ;
 ALTER TABLE churn_predictions ADD COLUMN IF NOT EXISTS renewal_due_at TIMESTAMPTZ;
@@ -25,14 +24,14 @@ SELECT
   (p.churn_probability * p.renewal_price_usd)::double precision AS expected_revenue_at_risk_usd,
   EXTRACT(EPOCH FROM (p.renewal_due_at - COALESCE(p.as_of_at, p.predicted_at))) / 86400.0 AS days_until_renewal
 FROM churn_predictions p
-WINDOW w AS (PARTITION BY p.app_id, p.user_id, p.model_id
+WINDOW w AS (PARTITION BY p.app_id, p.user_id, p.model_id, p.model_version
              ORDER BY COALESCE(p.as_of_at, p.predicted_at), p.predicted_at, p.prediction_id);
 
--- Latest prediction per subscriber and model.
+-- Latest prediction per subscriber and model version.
 CREATE OR REPLACE VIEW churn_risk_current AS
-SELECT DISTINCT ON (app_id, user_id, model_id) *
+SELECT DISTINCT ON (app_id, user_id, model_id, model_version) *
 FROM churn_risk_trajectory
-ORDER BY app_id, user_id, model_id, effective_at DESC, predicted_at DESC, prediction_id DESC;
+ORDER BY app_id, user_id, model_id, model_version, effective_at DESC, predicted_at DESC, prediction_id DESC;
 
 DO $$
 BEGIN
