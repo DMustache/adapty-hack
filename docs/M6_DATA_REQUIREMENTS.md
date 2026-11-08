@@ -1,6 +1,6 @@
 # M6 demo data and future integration requirements
 
-The hackathon demo uses the unchanged `lumen-temporal-catboost` 1.0.0 artifact, the local synthetic Lumen seed archives and explicitly simulated experiment events. It does not score customers or write to Adapty. The reviewed local archives contain 50,000 user rows and 29,794 transaction rows; see `docs/CHURN_PREDICTION_IO.md` for their hashes and the frozen model interface.
+The hackathon demo uses the unchanged `lumen-temporal-catboost` 1.0.0 artifact, the local synthetic Lumen seed archives and explicitly simulated experiment events. It does not score customers or write to Adapty. The reviewed local archives contain 50,000 user rows and 29,794 transaction rows; see [the source audit and frozen model interface](CHURN_PREDICTION_IO.md) for their hashes.
 
 | Need | Present in seed archives | What a future real integration would need |
 | --- | --- | --- |

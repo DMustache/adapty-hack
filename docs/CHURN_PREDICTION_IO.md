@@ -2,6 +2,8 @@
 
 ## M5 frozen interface (schema version 1.0)
 
+This is the frozen M5 interface and integration review. Historical future-tense requirements below record what was considered during that wave. The fixed model and synthetic lineage demo are now integrated; operational feature feeds and live Adapty events remain outside the hackathon scope. See [M6 data requirements](M6_DATA_REQUIREMENTS.md).
+
 `contracts/schemas/temporal-churn-request.schema.json` is the model-specific
 validation layer over the unchanged v1 request. The temporal fields live in
 `context`: `as_of_at` is the UTC decision and feature cutoff; `renewal_due_at`
