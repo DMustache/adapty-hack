@@ -81,8 +81,10 @@ The offline `users.ab_test` value identifies no assignment or view event.
 Neither CSV has a test/variation assignment, paywall exposure, or verified
 next-renewal outcome linkage. The deterministic M5 event examples are therefore
 marked `simulated`; they demonstrate ingestion and joins, not observed effect.
-Real-event dashboards and audit exports must show no data until verified
-event-level sources exist. No live placement activation occurs in M5.
+No customer test data is expected for this demo. Real-event dashboards and
+audit exports remain empty in M5. The simulated events are not training or
+validation data for the fixed churn model. No live placement activation occurs
+in M5.
 
 Source audit evidence (local, ignored files; do not commit their rows):
 `users.csv.gz` has 50,000 rows, SHA256
