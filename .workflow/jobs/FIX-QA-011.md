@@ -3,7 +3,7 @@ id: FIX-QA-011
 milestone: M7
 role: qa
 priority: P1
-status: READY
+status: DONE
 depends_on: [M7-AN-001]
 owned_paths:
   - tests/test_temporal_storage.py
