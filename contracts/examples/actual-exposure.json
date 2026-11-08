@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "app_id": "lumen-demo",
+  "user_id": "synthetic-pseudonym-001",
+  "source": "simulated",
+  "event_at": "2026-11-08T12:00:00Z",
+  "ingested_at": "2026-11-08T12:00:01Z",
+  "idempotency_key": "demo-actual-exposure",
+  "prediction_id": "prediction-001",
+  "model_id": "lumen-temporal-catboost",
+  "model_version": "1.0.0",
+  "as_of_at": "2026-11-08T12:00:00Z",
+  "renewal_due_at": "2026-11-15T12:00:00Z",
+  "experiment_id": "test-001",
+  "variation_id": "var-treatment",
+  "assignment_id": "assignment-001",
+  "exposure_id": "exposure-001",
+  "placement_id": "renewal-placement",
+  "flow_id": "treatment-published",
+  "source_event_id": "simulated-actual-exposure-001"
+}

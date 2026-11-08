@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "app_id": "lumen-demo",
+  "source": "simulated",
+  "event_at": "2026-11-08T12:00:00Z",
+  "ingested_at": "2026-11-08T12:00:01Z",
+  "idempotency_key": "demo-draft-test",
+  "experiment_id": "test-001",
+  "cohort_id": "cohort-001",
+  "policy_version": "policy-001",
+  "placement_id": "renewal-placement",
+  "segment_id": "segment-001",
+  "control_flow_id": "control-published",
+  "treatment_flow_id": "treatment-published",
+  "control_variation_id": "var-control",
+  "treatment_variation_id": "var-treatment",
+  "offer_product_id": "store-offer-reviewed",
+  "status": "draft",
+  "budget_mode": "estimate_only"
+}

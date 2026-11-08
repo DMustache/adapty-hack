@@ -1,5 +1,149 @@
 # Churn predictor I/O and Adapty A/B handoff
 
+## M5 frozen interface (schema version 1.0)
+
+`contracts/schemas/temporal-churn-request.schema.json` is the model-specific
+validation layer over the unchanged v1 request. The temporal fields live in
+`context`: `as_of_at` is the UTC decision and feature cutoff; `renewal_due_at`
+is the known end of the current paid period and must be later than `as_of_at`;
+`renewal_horizon_days` is `ceil((renewal_due_at - as_of_at) / 86400 seconds)`
+and must be 1–365. `features.renewal_price_usd` is the positive USD price of
+the **current paid receipt**, used as an estimate for the next renewal; it is
+not a verified future offer price. `features.days_until_renewal` retains the
+unrounded duration in days. Temporal validation enforces these cross-field
+relationships after JSON Schema validation. Other v1 model requests continue
+to use the existing schema.
+
+The fixed model target is failure to renew at the next eligible renewal for
+any reason, including billing failure and refund. Its output is a synthetic
+holdout risk estimate for that target. Calibration metrics in the imported
+report are evidence only for that synthetic distribution; do not imply live
+calibration. The artifact ID/version/checksum and all 23 required feature
+types and null allowances are copied from
+`services/inference/models/temporal_catboost/metadata.json` at
+`origin/temporal-churn` commit `7dc9a9692798111e9ec4fb8af3d8a97aee8dae66`.
+The committed example retains the research fixture values. A field allowed
+to be `null` by the artifact is still required as a key; a missing source is
+not permission to invent a non-null value or score operational traffic.
+
+### Feature source and cutoff audit
+
+The only available raw files are the local synthetic `users.csv.gz` and
+`transactions.csv.gz`. `users.user_id` joins to `transactions.user_id` inside
+the offline source; operational IDs must be pseudonymous and mapped separately
+to a verified Adapty profile/customer ID. Use event time **and** source
+availability time at or before `as_of_at`; the offline files have no ingestion
+time, so they do not establish operational availability.
+
+| Feature keys | Offline values and cutoff construction | Operational status |
+|---|---|---|
+| `plan`, `renewal_price_usd`, `started_with_trial` | Paid weekly/monthly transaction receipt, and earlier trial receipt | Receipt history required |
+| `platform`, `country`, `acquisition_channel`, `onboarding_goal`, `push_opt_in`, `app_version`, `placement`, `flow`, `ai_edits_first_day`, `photos_imported` | `users.csv.gz`; no field-level change or observation timestamps | Unproven at snapshot cutoff; require dated source before operational scoring |
+| `price_index` | Imported loader computes country annual-price median from the entire transaction file | Future-receipt leakage in offline construction; synthetic replay only until cutoff-safe source and ML compatibility are reviewed |
+| `tenure_days`, `renewal_count`, `days_until_renewal`, `days_since_last_payment`, `historical_renewal_success_rate` | Paid receipt chain through cutoff, known current `expires_at`; success rate is null before first completed renewal | Receipt/renewal history required; no outcome event after cutoff may enter |
+| `billing_issues_last_30d` | Count detected timestamps in `(as_of_at - 30 days, as_of_at]` | Dated billing-issue source required |
+| `days_since_install` | `users.install_at` through cutoff | Dated install source required |
+| `auto_renew_off`, `days_since_auto_renew_off` | Latest status-change event known at cutoff; days value null when off is false | Dated status history required |
+
+The source table is exhaustive for the 23 deployed keys. The imported snapshot
+replay accepts a paid, entitled weekly/monthly subscriber, excludes a refund
+already observed, and uses the current period's `expires_at` as the next due
+time. It labels an outcome only when the due time is at least one day before
+the observation cutoff. Synthetic fixture scoring may reproduce the imported
+values, including the documented source limitations. The operational builder
+must return an unscored missing-source state when a value or its cutoff safety
+cannot be established. It must not substitute later receipts, global medians,
+or current profile values for earlier facts.
+
+### Versioned lifecycle records
+
+The schemas and examples in `contracts/` define immutable model metadata,
+approved cohort/policy, profile sync, draft test, assignment, exposure, and
+next-renewal outcome records. Join by `(app_id, user_id, prediction_id,
+model_id, model_version)` and the frozen renewal due time; join test events by
+`(experiment_id, variation_id)` and source event ID. Each record has a UTC
+event time, ingest time, source, and idempotency key. A repeated key with a
+different payload is a conflict; missing assignment, exposure, or mature
+outcome remains absent, never inferred from a proposal or transaction alone.
+
+Freeze a cohort ID, policy version, selected prediction IDs, and membership
+cutoff before profile writes. The identity map from our pseudonymous ID to a
+verified Adapty profile/customer ID is restricted service-side data, not a
+Grafana dimension or export. A sync acknowledgment is not proof that a segment
+has propagated: a draft requires a verified segment and a recorded readiness
+check after propagation. An unset attribute means unknown, not low risk.
+The draft maps reviewed control/treatment content and actual store offers to
+Adapty variation IDs. Adapty randomizes actual arms; planner assignments are
+scenario proposals only. `budget_usd` and exposure are estimates: a regular
+placement A/B split does not enforce a strict per-user discount cap.
+
+The offline `users.ab_test` value identifies no assignment or view event.
+Neither CSV has a test/variation assignment, paywall exposure, or verified
+next-renewal outcome linkage. The deterministic M5 event examples are therefore
+marked `simulated`; they demonstrate ingestion and joins, not observed effect.
+Real-event dashboards and audit exports must show no data until verified
+event-level sources exist. No live placement activation occurs in M5.
+
+Source audit evidence (local, ignored files; do not commit their rows):
+`users.csv.gz` has 50,000 rows, SHA256
+`5fd57c54395ff1ee885acf57704b142faada43ab15403be7070cbc5b98c6954b`;
+its only test-related column is `ab_test`. `transactions.csv.gz` has 29,794
+rows, SHA256
+`9ea75794c827de67c23fc67f21a959a02d18603bc27fb325560e5c662d759193`;
+it has no assignment, variation, exposure, view, or experiment column.
+Transactions contain purchases, expiry, billing issue and refund timestamps;
+they do not establish which randomized content a subscriber actually saw.
+
+The ML review basis for this freeze is the immutable artifact metadata,
+evaluation report and deterministic fixture at `origin/temporal-churn`
+`7dc9a9692798111e9ec4fb8af3d8a97aee8dae66`, as accepted for M5 planning.
+This records the target and synthetic holdout metrics; it is not a new
+operational calibration approval. The integration surface review below freezes
+the interface; a named integration owner must still approve real tenant IDs,
+treatment content and any profile write before an Adapty draft is created.
+
+### Integration surface review, 2026-11-08 UTC
+
+Read-only Adapty CLI inspection of Lumen app
+`2112a0d1-4aca-4cf3-8113-e70272b9aaef` found five flow placements,
+seven published flows, three segments, two live flow tests and one draft.
+There is no churn cohort segment. Main and Onboarding already have live tests;
+the Main placement's North American audience currently serves one. No
+published flow or store offer was verified as the proposed retention
+treatment. These are concrete `not_ready` conditions for a churn draft on
+those resources, not reasons to infer an assignment or change a live test.
+
+The documented profile update is `PATCH /api/v2/server-side-api/profile/`:
+identify a verified profile with exactly one of `adapty-profile-id` or
+`adapty-customer-user-id` headers; encode the typed value in
+`custom_attributes: [{"key": "churn_cohort", "value": "<cohort-id>"}]`.
+The internal profile-sync record is an audit record, not that HTTP body.
+The custom key and type must first exist in the dashboard; a String attribute
+uses predefined values, and each profile may have at most 30 custom
+attributes. Treat an API 200 as acknowledgment, then verify segment membership
+separately because profile/segment updates can lag. Missing attributes do not
+match a typed comparison and cannot mean low risk.
+
+The documented CLI creates a **draft** test from published flows on a flow
+placement, with an optional planned segment; it does not affect users until
+started. `start` is outside M5. For flow tests, the canonical
+`variation_id` in our records maps to Adapty `ab_test_variant_id` (which
+matches `flow_variation_id`), **not** the webhook's `variation_id` for a paywall
+screen. Subscription webhooks can carry the test and variant of an attributed
+purchase or renewal, but they are not proof that every eligible user was
+assigned or actually viewed a flow. Assignment and exposure need separately
+verified SDK/event-level capture; absent records stay absent. Deduplicate
+webhooks using `profile_event_id` or transaction IDs and preserve receipt time
+because event times may arrive out of order. An observed nonrenewal requires a
+complete event source through the outcome maturity cutoff, not merely the
+absence of a purchase row.
+
+This review verifies the documented integration shape and current read-only
+tenant state. It does not approve a real customer test, profile write, or
+specific treatment content. No Grafana action is needed to validate these
+Adapty facts: local Grafana is a read-only PostgreSQL consumer and the Compose
+stack was not running during this review.
+
 This is the target integration for the external churn predictor. The application
 services do not train or update model weights. `origin/model-implementation`
 contains `discount_advisor/`, a synthetic-data cohort experiment advisor, not

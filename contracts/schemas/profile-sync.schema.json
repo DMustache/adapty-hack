@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "profile-sync",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "app_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "enum": [
+        "simulated",
+        "adapty",
+        "sdk",
+        "external"
+      ]
+    },
+    "event_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "ingested_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prediction_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_id": {
+      "const": "lumen-temporal-catboost"
+    },
+    "model_version": {
+      "const": "1.0.0"
+    },
+    "as_of_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "renewal_due_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "cohort_id": {
+      "type": "string"
+    },
+    "profile_ref": {
+      "type": "string"
+    },
+    "identity_map_ref": {
+      "type": "string"
+    },
+    "attribute_name": {
+      "type": "string"
+    },
+    "attribute_value": {
+      "type": "string"
+    },
+    "sync_status": {
+      "enum": [
+        "pending",
+        "acknowledged",
+        "failed"
+      ]
+    },
+    "propagation_checked_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "identity_kind": {
+      "enum": [
+        "adapty_profile_id",
+        "customer_user_id"
+      ]
+    },
+    "identity_verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "app_id",
+    "user_id",
+    "source",
+    "event_at",
+    "ingested_at",
+    "idempotency_key",
+    "prediction_id",
+    "model_id",
+    "model_version",
+    "as_of_at",
+    "renewal_due_at",
+    "cohort_id",
+    "profile_ref",
+    "identity_map_ref",
+    "attribute_name",
+    "attribute_value",
+    "sync_status",
+    "propagation_checked_at",
+    "identity_kind",
+    "identity_verified_at"
+  ]
+}

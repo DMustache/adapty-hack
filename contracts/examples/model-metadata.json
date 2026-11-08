@@ -1,0 +1,198 @@
+{
+  "schema_version": "1.0",
+  "model_id": "lumen-temporal-catboost",
+  "model_version": "1.0.0",
+  "artifact_sha256": "4f3fd0acc9944b19fd0743d3c0b8a8863b8d59e1e81065c5a0940d5b9fad1491",
+  "target": "failure to renew at the next eligible renewal event (any reason)",
+  "features": [
+    "plan",
+    "platform",
+    "country",
+    "acquisition_channel",
+    "onboarding_goal",
+    "push_opt_in",
+    "app_version",
+    "placement",
+    "flow",
+    "renewal_price_usd",
+    "price_index",
+    "ai_edits_first_day",
+    "photos_imported",
+    "started_with_trial",
+    "tenure_days",
+    "renewal_count",
+    "days_until_renewal",
+    "days_since_last_payment",
+    "historical_renewal_success_rate",
+    "billing_issues_last_30d",
+    "days_since_install",
+    "auto_renew_off",
+    "days_since_auto_renew_off"
+  ],
+  "feature_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "lumen-temporal-catboost features",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "plan",
+      "platform",
+      "country",
+      "acquisition_channel",
+      "onboarding_goal",
+      "push_opt_in",
+      "app_version",
+      "placement",
+      "flow",
+      "renewal_price_usd",
+      "price_index",
+      "ai_edits_first_day",
+      "photos_imported",
+      "started_with_trial",
+      "tenure_days",
+      "renewal_count",
+      "days_until_renewal",
+      "days_since_last_payment",
+      "historical_renewal_success_rate",
+      "billing_issues_last_30d",
+      "days_since_install",
+      "auto_renew_off",
+      "days_since_auto_renew_off"
+    ],
+    "properties": {
+      "plan": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "platform": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "country": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "acquisition_channel": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "onboarding_goal": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "push_opt_in": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "app_version": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "placement": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "flow": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "renewal_price_usd": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "price_index": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "ai_edits_first_day": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "photos_imported": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "started_with_trial": {
+        "type": "boolean"
+      },
+      "tenure_days": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "renewal_count": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "days_until_renewal": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "days_since_last_payment": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "historical_renewal_success_rate": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "billing_issues_last_30d": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "days_since_install": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "auto_renew_off": {
+        "type": "boolean"
+      },
+      "days_since_auto_renew_off": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    }
+  },
+  "review_source": "origin/temporal-churn@7dc9a9692798111e9ec4fb8af3d8a97aee8dae66"
+}

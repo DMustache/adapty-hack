@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "approved-cohort",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "app_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "enum": [
+        "simulated",
+        "adapty",
+        "sdk",
+        "external"
+      ]
+    },
+    "event_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "ingested_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prediction_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_id": {
+      "const": "lumen-temporal-catboost"
+    },
+    "model_version": {
+      "const": "1.0.0"
+    },
+    "as_of_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "renewal_due_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "cohort_id": {
+      "type": "string"
+    },
+    "policy_version": {
+      "type": "string"
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "membership_cutoff_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "budget_usd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "budget_mode": {
+      "const": "estimate_only"
+    },
+    "status": {
+      "const": "approved"
+    }
+  },
+  "required": [
+    "schema_version",
+    "app_id",
+    "user_id",
+    "source",
+    "event_at",
+    "ingested_at",
+    "idempotency_key",
+    "prediction_id",
+    "model_id",
+    "model_version",
+    "as_of_at",
+    "renewal_due_at",
+    "cohort_id",
+    "policy_version",
+    "approved_at",
+    "membership_cutoff_at",
+    "budget_usd",
+    "budget_mode",
+    "status"
+  ]
+}

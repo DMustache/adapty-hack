@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "request_id": "synthetic-fixture-001",
+  "app_id": "lumen-demo",
+  "user_id": "synthetic-pseudonym-001",
+  "model_id": "lumen-temporal-catboost",
+  "renewal_horizon_days": 7,
+  "context": {
+    "as_of_at": "2026-07-08T09:34:54Z",
+    "renewal_due_at": "2026-07-15T09:34:54Z"
+  },
+  "features": {
+    "plan": "weekly",
+    "platform": "ios",
+    "country": "US",
+    "acquisition_channel": "tiktok_ads",
+    "onboarding_goal": "social_content",
+    "push_opt_in": "no",
+    "app_version": "3.6.0",
+    "placement": "onboarding",
+    "flow": "onb_weekly",
+    "renewal_price_usd": 6.99,
+    "price_index": 1.0,
+    "ai_edits_first_day": 2.0,
+    "photos_imported": 17.0,
+    "started_with_trial": true,
+    "tenure_days": 0.0,
+    "renewal_count": 0.0,
+    "days_until_renewal": 7.0,
+    "days_since_last_payment": 0.0,
+    "historical_renewal_success_rate": null,
+    "billing_issues_last_30d": 0.0,
+    "days_since_install": 3.0022685185185187,
+    "auto_renew_off": false,
+    "days_since_auto_renew_off": null
+  }
+}
