@@ -8,7 +8,8 @@ import psycopg
 
 
 def main():
-    sql = Path("/app/postgres/init/003-temporal-predictions.sql").read_text()
+    migrations = [Path("/app/postgres/init/003-temporal-predictions.sql"),
+                  Path("/app/postgres/init/005-experiment-lineage.sql")]
     for attempt in range(30):
         try:
             conn = psycopg.connect(os.environ["DATABASE_URL"])
@@ -18,7 +19,8 @@ def main():
                 raise
             time.sleep(1)
     with conn:
-        conn.execute(sql)
+        for path in migrations:
+            conn.execute(path.read_text())
 
 
 if __name__ == "__main__":
